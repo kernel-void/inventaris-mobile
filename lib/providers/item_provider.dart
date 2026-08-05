@@ -1,0 +1,162 @@
+import 'package:flutter/foundation.dart' show ChangeNotifier;
+
+import '../models/category.dart';
+import '../models/dashboard.dart';
+import '../models/item.dart';
+import '../models/room.dart';
+import '../services/category_service.dart';
+import '../services/dashboard_service.dart';
+import '../services/item_service.dart';
+import '../services/room_service.dart';
+
+class ItemProvider extends ChangeNotifier {
+  ItemProvider({
+    ItemService? itemService,
+    CategoryService? categoryService,
+    RoomService? roomService,
+    DashboardService? dashboardService,
+  })  : _itemService = itemService ?? ItemService(),
+        _categoryService = categoryService ?? CategoryService(),
+        _roomService = roomService ?? RoomService(),
+        _dashboardService = dashboardService ?? DashboardService();
+
+  final ItemService _itemService;
+  final CategoryService _categoryService;
+  final RoomService _roomService;
+  final DashboardService _dashboardService;
+
+  List<Item> _items = [];
+  List<Category> _categories = [];
+  List<Room> _rooms = [];
+  DashboardData? _dashboard;
+  bool _loading = false;
+  bool _hasMore = false;
+  int _page = 1;
+  String _search = '';
+  String? _error;
+
+  List<Item> get items => _items;
+  List<Category> get categories => _categories;
+  List<Room> get rooms => _rooms;
+  DashboardData? get dashboard => _dashboard;
+  bool get loading => _loading;
+  bool get hasMore => _hasMore;
+  String? get error => _error;
+
+  Future<void> loadItems({bool refresh = false}) async {
+    if (_loading) return;
+    _loading = true;
+    _error = null;
+    if (refresh) {
+      _page = 1;
+      _items = [];
+    }
+    notifyListeners();
+
+    try {
+      final (items, hasMore) = await _itemService.all(
+        search: _search,
+        page: _page,
+        perPage: 15,
+      );
+      _items = refresh ? items : [..._items, ...items];
+      _hasMore = hasMore;
+      _page++;
+    } catch (e) {
+      _error = e.toString();
+    } finally {
+      _loading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> loadReferences() async {
+    try {
+      final results = await Future.wait([_categoryService.all(), _roomService.all()]);
+      _categories = results[0] as List<Category>;
+      _rooms = results[1] as List<Room>;
+      notifyListeners();
+    } catch (_) {}
+  }
+
+  Future<List<Item>> fetchAllItems() async {
+    final (items, _) = await _itemService.all(search: '', page: 1, perPage: 1000);
+    return items;
+  }
+
+  Future<DashboardData> loadDashboard() async {
+    _loading = true;
+    _error = null;
+    notifyListeners();
+    try {
+      _dashboard = await _dashboardService.fetch();
+      return _dashboard!;
+    } catch (e) {
+      _error = e.toString();
+      rethrow;
+    } finally {
+      _loading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> setSearch(String value) async {
+    _search = value.trim();
+    _items = [];
+    _page = 1;
+    notifyListeners();
+    await loadItems(refresh: true);
+  }
+
+  Future<Item> createItem(Map<String, dynamic> payload) async {
+    final item = await _itemService.create(payload);
+    await loadItems(refresh: true);
+    return item;
+  }
+
+  Future<Item> updateItem(int id, Map<String, dynamic> payload) async {
+    final item = await _itemService.update(id, payload);
+    await loadItems(refresh: true);
+    return item;
+  }
+
+  Future<void> deleteItem(int id) async {
+    await _itemService.delete(id);
+    await loadItems(refresh: true);
+  }
+
+  Future<void> createCategory(Map<String, dynamic> payload) async {
+    await _categoryService.create(payload);
+    await loadReferences();
+  }
+
+  Future<void> updateCategory(int id, Map<String, dynamic> payload) async {
+    await _categoryService.update(id, payload);
+    await loadReferences();
+  }
+
+  Future<void> deleteCategory(int id) async {
+    await _categoryService.delete(id);
+    await loadReferences();
+  }
+
+  Future<void> createRoom(Map<String, dynamic> payload) async {
+    await _roomService.create(payload);
+    await loadReferences();
+  }
+
+  Future<void> updateRoom(int id, Map<String, dynamic> payload) async {
+    await _roomService.update(id, payload);
+    await loadReferences();
+  }
+
+  Future<void> deleteRoom(int id) async {
+    await _roomService.delete(id);
+    await loadReferences();
+  }
+
+  void clearError() {
+    _error = null;
+    notifyListeners();
+  }
+}

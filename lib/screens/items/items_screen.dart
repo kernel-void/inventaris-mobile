@@ -1,0 +1,348 @@
+import 'dart:async';
+
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+
+import '../../models/item.dart';
+import '../../providers/auth_provider.dart';
+import '../../providers/item_provider.dart';
+import '../../theme/app_theme.dart';
+import '../../widgets/error_view.dart';
+import '../../widgets/icon_badge.dart';
+import '../../widgets/loading_widget.dart';
+import '../../widgets/search_field.dart';
+import 'item_detail_screen.dart';
+import 'item_form_screen.dart';
+
+class ItemsScreen extends StatefulWidget {
+  const ItemsScreen({super.key});
+
+  @override
+  State<ItemsScreen> createState() => _ItemsScreenState();
+}
+
+class _ItemsScreenState extends State<ItemsScreen> {
+  final _searchController = TextEditingController();
+  Timer? _debounce;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<ItemProvider>().loadItems(refresh: true);
+    });
+  }
+
+  @override
+  void dispose() {
+    _debounce?.cancel();
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  void _onSearchChanged(String value) {
+    _debounce?.cancel();
+    if (value.trim().isEmpty) {
+      context.read<ItemProvider>().setSearch('');
+      return;
+    }
+    _debounce = Timer(const Duration(milliseconds: 350), () {
+      context.read<ItemProvider>().setSearch(value);
+    });
+  }
+
+  Future<void> _confirmDelete(Item item) async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Hapus Barang?'),
+        content: Text(
+          'Barang "${item.name}" akan dihapus. Tindakan ini tidak bisa dibatalkan.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Batal'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: TextButton.styleFrom(foregroundColor: AppTheme.danger),
+            child: const Text('Hapus'),
+          ),
+        ],
+      ),
+    );
+    if (ok != true || !mounted) return;
+
+    try {
+      await context.read<ItemProvider>().deleteItem(item.id);
+      if (mounted) _showSnack('Barang berhasil dihapus');
+    } catch (e) {
+      if (mounted) _showSnack(e.toString(), isError: true);
+    }
+  }
+
+  void _showSnack(String message, {bool isError = false}) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        backgroundColor: isError ? AppTheme.danger : null,
+        content: Text(message),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final provider = context.watch<ItemProvider>();
+    final auth = context.watch<AuthProvider>();
+    final canCreate = auth.can('items.create');
+    final canEdit = auth.can('items.update') || canCreate;
+    final canDelete = auth.can('items.delete');
+    final canView = auth.can('items.view');
+
+    return Scaffold(
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+            child: SearchField(
+              controller: _searchController,
+              hint: 'Cari barang',
+              onChanged: _onSearchChanged,
+            ),
+          ),
+          Expanded(
+            child: provider.loading && provider.items.isEmpty
+                ? const LoadingWidget(text: 'Memuat barang...')
+                : provider.error != null && provider.items.isEmpty
+                    ? ErrorView(
+                        message: provider.error!,
+                        onRetry: () => provider.loadItems(refresh: true),
+                      )
+                    : RefreshIndicator(
+                        onRefresh: () => provider.loadItems(refresh: true),
+                        child: provider.items.isEmpty
+                            ? _EmptyState(
+                                hasSearch: provider.error == null,
+                                onReset: () {
+                                  _debounce?.cancel();
+                                  _searchController.clear();
+                                  provider.setSearch('');
+                                },
+                              )
+                            : ListView.separated(
+                                padding: const EdgeInsets.fromLTRB(16, 8, 16, 96),
+                                itemCount:
+                                    provider.items.length + (provider.hasMore ? 1 : 0),
+                                separatorBuilder: (_, _) => const SizedBox(height: 8),
+                                itemBuilder: (context, index) {
+                                  if (index >= provider.items.length) {
+                                    provider.loadItems();
+                                    return const Padding(
+                                      padding: EdgeInsets.symmetric(vertical: 16),
+                                      child: Center(
+                                        child: CircularProgressIndicator(strokeWidth: 2.5),
+                                      ),
+                                    );
+                                  }
+                                  final item = provider.items[index];
+                                  return _ItemCard(
+                                    item: item,
+                                    canEdit: canEdit,
+                                    canDelete: canDelete,
+                                    onEdit: () => _openForm(context, item: item),
+                                    onView:
+                                        canView ? () => _openDetail(context, item) : null,
+                                    onDelete: () => _confirmDelete(item),
+                                  );
+                                },
+                              ),
+                      ),
+          ),
+        ],
+      ),
+      floatingActionButton: canCreate
+          ? FloatingActionButton.extended(
+              onPressed: () => _openForm(context),
+              icon: const Icon(Icons.add),
+              label: const Text('Barang'),
+            )
+          : null,
+    );
+  }
+
+  Future<void> _openForm(BuildContext context, {Item? item}) async {
+    await Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => ItemFormScreen(item: item)),
+    );
+    if (context.mounted) {
+      context.read<ItemProvider>().loadItems(refresh: true);
+    }
+  }
+
+  Future<void> _openDetail(BuildContext context, Item item) async {
+    await Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => ItemDetailScreen(itemId: item.id)),
+    );
+  }
+}
+
+class _ItemCard extends StatelessWidget {
+  const _ItemCard({
+    required this.item,
+    required this.canEdit,
+    required this.canDelete,
+    this.onEdit,
+    this.onView,
+    this.onDelete,
+  });
+
+  final Item item;
+  final bool canEdit;
+  final bool canDelete;
+  final VoidCallback? onEdit;
+  final VoidCallback? onView;
+  final VoidCallback? onDelete;
+
+  @override
+  Widget build(BuildContext context) {
+    final lowStock = item.isLowStock;
+    return Card(
+      margin: EdgeInsets.zero,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(16),
+        onTap: canEdit ? onEdit : onView,
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Row(
+            children: [
+              IconBadge(
+                icon: Icons.inventory_2_outlined,
+                color: lowStock ? AppTheme.warning : AppTheme.primary,
+                size: 44,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      item.name,
+                      style: Theme.of(context).textTheme.titleSmall,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      [
+                        item.code,
+                        item.category?.name,
+                        item.room?.name,
+                      ].whereType<String>().join(' · '),
+                      style: Theme.of(context).textTheme.bodySmall,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                decoration: BoxDecoration(
+                  color: (lowStock ? AppTheme.warning : AppTheme.success)
+                      .withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  '${item.stock} ${item.unit ?? ''}',
+                  style: TextStyle(
+                    color: lowStock ? AppTheme.warning : AppTheme.success,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 12,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 4),
+              if (canDelete)
+                PopupMenuButton<String>(
+                  tooltip: 'Aksi',
+                  onSelected: (value) {
+                    if (value == 'edit') onEdit?.call();
+                    if (value == 'delete') onDelete?.call();
+                  },
+                  itemBuilder: (context) => [
+                    if (onEdit != null)
+                      const PopupMenuItem(
+                        value: 'edit',
+                        child: Text('Edit'),
+                      ),
+                    if (onDelete != null)
+                      const PopupMenuItem(
+                        value: 'delete',
+                        child: Text('Hapus'),
+                      ),
+                  ],
+                )
+              else if (canEdit)
+                IconButton(
+                  visualDensity: VisualDensity.compact,
+                  onPressed: onEdit,
+                  icon: const Icon(Icons.chevron_right, size: 20),
+                  color: AppTheme.textSecondary,
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _EmptyState extends StatelessWidget {
+  const _EmptyState({required this.hasSearch, required this.onReset});
+
+  final bool hasSearch;
+  final VoidCallback onReset;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView(
+      children: [
+        const SizedBox(height: 120),
+        Icon(Icons.inventory_2_outlined,
+            size: 64, color: AppTheme.textSecondary.withValues(alpha: 0.5)),
+        const SizedBox(height: 16),
+        Center(
+          child: Text(
+            hasSearch ? 'Barang tidak ditemukan' : 'Belum ada barang',
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Center(
+          child: Text(
+            hasSearch
+                ? 'Coba kata kunci lain atau reset pencarian'
+                : 'Tambahkan barang pertama Anda',
+            style: Theme.of(context).textTheme.bodySmall,
+            textAlign: TextAlign.center,
+          ),
+        ),
+        if (hasSearch)
+          Padding(
+            padding: const EdgeInsets.only(top: 16),
+            child: Center(
+              child: TextButton.icon(
+                onPressed: onReset,
+                icon: const Icon(Icons.close, size: 18),
+                label: const Text('Reset pencarian'),
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+}
