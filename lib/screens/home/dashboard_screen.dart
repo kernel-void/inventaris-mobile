@@ -3,11 +3,13 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 import 'package:provider/provider.dart';
 
+import '../../core/config/app_config.dart';
 import '../../core/theme/app_theme.dart';
 import '../../models/dashboard.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/item_provider.dart';
 import '../../widgets/error_view.dart';
+import '../../widgets/icon_badge.dart';
 import '../../widgets/loading_widget.dart';
 import '../../widgets/stat_card.dart';
 import '../items/items_screen.dart';
@@ -58,6 +60,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
         error: _error,
         userName: auth.user?.name,
         canReports: auth.can('reports.view'),
+        onLowStockSeeAll: () {
+          setState(() => _selectedIndex = 1);
+          provider.setLowStockOnly(true);
+        },
       ),
       const ItemsScreen(),
       if (isAdmin) const MasterScreen(),
@@ -124,12 +130,14 @@ class _DashboardTab extends StatelessWidget {
     this.error,
     this.userName,
     this.canReports = false,
+    this.onLowStockSeeAll,
   });
 
   final ItemProvider provider;
   final String? error;
   final String? userName;
   final bool canReports;
+  final VoidCallback? onLowStockSeeAll;
 
   static const _days = [
     'Senin',
@@ -212,7 +220,7 @@ class _DashboardTab extends StatelessWidget {
             _buildReportCard(context),
             const SizedBox(height: AppTheme.sectionGap),
           ],
-          _buildLowStockSection(context, dashboard),
+          _buildLowStockSection(context, dashboard, onSeeAll: onLowStockSeeAll),
         ],
       ),
     );
@@ -367,12 +375,18 @@ class _DashboardTab extends StatelessWidget {
     );
   }
 
-  Widget _buildLowStockSection(BuildContext context, DashboardData dashboard) {
+  Widget _buildLowStockSection(
+    BuildContext context,
+    DashboardData dashboard, {
+    VoidCallback? onSeeAll,
+  }) {
     final theme = Theme.of(context);
     final items = dashboard.lowStockItems;
     final onWarning = theme.brightness == Brightness.light
         ? Colors.white
         : const Color(0xFF101218);
+    const maxVisible = 4;
+    final visible = items.take(maxVisible).toList();
 
     return Container(
       padding: const EdgeInsets.all(AppTheme.cardPadding),
@@ -408,29 +422,18 @@ class _DashboardTab extends StatelessWidget {
                   children: [
                     Text('Stok Menipis', style: theme.textTheme.titleMedium),
                     Text(
-                      'Sisa stok 5 atau kurang',
+                      'Sisa stok ${AppConfig.lowStockThreshold} atau kurang',
                       style: theme.textTheme.bodySmall,
                     ),
                   ],
                 ),
               ),
               if (items.isNotEmpty)
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
+                Text(
+                  '${items.length} barang',
+                  style: theme.textTheme.bodySmall?.copyWith(
                     color: context.warning,
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Text(
-                    '${items.length}',
-                    style: TextStyle(
-                      color: onWarning,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                    ),
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
             ],
@@ -459,17 +462,26 @@ class _DashboardTab extends StatelessWidget {
                 ],
               ),
             )
-          else
-            ...items.map(
+          else ...[
+            ...visible.map(
               (item) => Container(
                 margin: const EdgeInsets.only(bottom: 8),
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: context.warning.withValues(alpha: 0.07),
+                  color: context.colors.surface,
                   borderRadius: BorderRadius.circular(14),
+                  border: Border.all(
+                    color: theme.dividerTheme.color ?? Colors.transparent,
+                  ),
                 ),
                 child: Row(
                   children: [
+                    IconBadge(
+                      icon: PhosphorIcons.package,
+                      color: theme.colorScheme.onSurfaceVariant,
+                      size: 44,
+                    ),
+                    const SizedBox(width: 12),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -507,6 +519,22 @@ class _DashboardTab extends StatelessWidget {
                 ),
               ),
             ),
+            if (items.length > maxVisible && onSeeAll != null)
+              Center(
+                child: TextButton(
+                  onPressed: onSeeAll,
+                  style: TextButton.styleFrom(foregroundColor: context.primary),
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text('Lihat semua'),
+                      SizedBox(width: 4),
+                      Icon(PhosphorIcons.caretRight, size: 16),
+                    ],
+                  ),
+                ),
+              ),
+          ],
         ],
       ),
     );

@@ -3,6 +3,7 @@ import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 
 import '../../core/api/api_client.dart';
 import '../../core/api/api_exception.dart';
+import '../../core/config/app_config.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/widgets/custom_snackbar.dart';
 import '../auth/login_screen.dart';
@@ -31,7 +32,15 @@ class _MaintenanceScreenState extends State<MaintenanceScreen> {
   Future<void> _retry() async {
     setState(() => _checking = true);
     try {
-      await ApiClient.instance.request('/status');
+      final response = await ApiClient.instance.request('/status');
+      final data = response.data;
+      if (data is Map<String, dynamic> && data['data'] is Map<String, dynamic>) {
+        final threshold = (data['data'] as Map<String, dynamic>)[
+            'low_stock_threshold'];
+        if (threshold is int) {
+          AppConfig.lowStockThreshold = threshold;
+        }
+      }
     } on ApiException catch (e) {
       if (!mounted) return;
       setState(() => _checking = false);

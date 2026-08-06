@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 
 import '../../core/theme/app_theme.dart';
 import '../../models/item.dart';
+import '../../models/room.dart';
 import '../../providers/item_provider.dart';
 import '../../providers/transaction_provider.dart';
 import '../../widgets/search_select_field.dart';
@@ -26,7 +27,7 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
   late String _date;
   int? _itemId;
   final _quantityController = TextEditingController(text: '1');
-  final _destinationController = TextEditingController();
+  Room? _destinationRoom;
   final _descriptionController = TextEditingController();
 
   bool _submitting = false;
@@ -46,8 +47,10 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
   }
 
   Future<void> _loadItems() async {
+    final provider = context.read<ItemProvider>();
     try {
-      final items = await context.read<ItemProvider>().fetchAllItems();
+      final items = await provider.fetchAllItems();
+      await provider.loadReferences();
       if (mounted) {
         setState(() {
           _allItems = items;
@@ -62,7 +65,6 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
   @override
   void dispose() {
     _quantityController.dispose();
-    _destinationController.dispose();
     _descriptionController.dispose();
     super.dispose();
   }
@@ -113,9 +115,7 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
           itemId: _itemId!,
           date: _date,
           quantity: quantity,
-          destination: _destinationController.text.trim().isEmpty
-              ? null
-              : _destinationController.text.trim(),
+          destination: _destinationRoom?.name,
           description: _descriptionController.text.trim().isEmpty
               ? null
               : _descriptionController.text.trim(),
@@ -131,7 +131,7 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
 
   Widget _buildSection(String title) {
     return Padding(
-      padding: const EdgeInsets.only(top: 20, bottom: 4),
+      padding: const EdgeInsets.only(top: 24, bottom: 16),
       child: Text(
         title,
         style: Theme.of(context).textTheme.bodySmall?.copyWith(
@@ -144,10 +144,14 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final stockItems = _allItems.where((i) => i.stock > 0).toList();
+    final provider = context.watch<ItemProvider>();
+    final availableItems = _isIncoming
+        ? _allItems
+        : _allItems.where((i) => i.stock > 0).toList();
     final selectedItem = _itemId == null
         ? null
         : _allItems.where((i) => i.id == _itemId).firstOrNull;
+    final selectedUnit = selectedItem?.unit;
 
     return Scaffold(
       appBar: AppBar(
@@ -195,7 +199,7 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
                         hint: _loadingItems
                             ? 'Memuat barang...'
                             : 'Cari barang...',
-                        items: stockItems,
+                        items: availableItems,
                         value: selectedItem,
                         onChanged: (item) => setState(() => _itemId = item?.id),
                         searchText: (i) =>
@@ -247,12 +251,20 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
                             child: TextFormField(
                               controller: _quantityController,
                               keyboardType: TextInputType.number,
-                              decoration: const InputDecoration(
-                                labelText: 'Jumlah',
+                              decoration: InputDecoration(
+                                labelText: selectedUnit != null
+                                    ? 'Jumlah ($selectedUnit)'
+                                    : 'Jumlah',
                               ),
                               validator: (v) {
                                 final n = int.tryParse(v ?? '');
                                 if (n == null || n < 1) return 'Min. 1';
+                                final item = selectedItem;
+                                if (!_isIncoming &&
+                                    item != null &&
+                                    n > item.stock) {
+                                  return 'Melebihi stok (tersedia ${item.stock} ${item.unit ?? 'unit'})';
+                                }
                                 return null;
                               },
                             ),
@@ -287,13 +299,24 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
                           ),
                         ],
                       if (!_isIncoming) ...[
-                        _buildSection('TUJUAN'),
-                        TextFormField(
-                          controller: _destinationController,
+                        const SizedBox(height: 12),
+                        DropdownButtonFormField<Room>(
+                          isExpanded: true,
+                          initialValue: _destinationRoom,
                           decoration: const InputDecoration(
                             labelText: 'Tujuan',
-                            hintText: 'Kelas, ruang, atau pihak penerima',
                           ),
+                          hint: const Text('Pilih ruangan tujuan'),
+                          items: provider.rooms
+                              .map(
+                                (r) => DropdownMenuItem(
+                                  value: r,
+                                  child: Text(r.name),
+                                ),
+                              )
+                              .toList(),
+                          onChanged: (v) =>
+                              setState(() => _destinationRoom = v),
                         ),
                       ],
                       _buildSection('CATATAN'),

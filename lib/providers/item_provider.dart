@@ -33,6 +33,7 @@ class ItemProvider extends ChangeNotifier {
   bool _hasMore = false;
   int _page = 1;
   String _search = '';
+  bool _lowStockOnly = false;
   String? _error;
 
   List<Item> get items => _items;
@@ -41,6 +42,7 @@ class ItemProvider extends ChangeNotifier {
   DashboardData? get dashboard => _dashboard;
   bool get loading => _loading;
   bool get hasMore => _hasMore;
+  bool get lowStockOnly => _lowStockOnly;
   String? get error => _error;
 
   Future<void> loadItems({bool refresh = false}) async {
@@ -56,6 +58,7 @@ class ItemProvider extends ChangeNotifier {
     try {
       final (items, hasMore) = await _itemService.all(
         search: _search,
+        lowStock: _lowStockOnly ? true : null,
         page: _page,
         perPage: 15,
       );
@@ -68,6 +71,17 @@ class ItemProvider extends ChangeNotifier {
       _loading = false;
       notifyListeners();
     }
+  }
+
+  /// Aktifkan/nonaktifkan filter stok menipis pada daftar barang.
+  Future<void> setLowStockOnly(bool value) async {
+    if (_lowStockOnly == value) return;
+    _lowStockOnly = value;
+    _search = '';
+    _items = [];
+    _page = 1;
+    notifyListeners();
+    await loadItems(refresh: true);
   }
 
   Future<void> loadReferences() async {

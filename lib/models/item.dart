@@ -1,4 +1,5 @@
 import 'category.dart';
+import '../core/config/app_config.dart';
 import 'room.dart';
 
 class Item {
@@ -52,7 +53,7 @@ class Item {
         description: json['description'] as String?,
       );
 
-  bool get isLowStock => stock <= 5;
+  bool get isLowStock => stock <= AppConfig.lowStockThreshold;
 
   Map<String, dynamic> toPayload() => {
         'name': name,

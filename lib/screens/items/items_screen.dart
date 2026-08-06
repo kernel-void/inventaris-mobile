@@ -5,6 +5,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 import 'package:provider/provider.dart';
 
+import '../../core/config/app_config.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/widgets/custom_snackbar.dart';
 import '../../models/item.dart';
@@ -114,6 +115,52 @@ class _ItemsScreenState extends State<ItemsScreen> {
               onChanged: _onSearchChanged,
             ),
           ),
+          if (provider.lowStockOnly)
+            Container(
+              margin: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                color: context.warning.withValues(alpha: 0.10),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: context.warning.withValues(alpha: 0.30),
+                ),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    PhosphorIcons.warningCircle,
+                    size: 18,
+                    color: context.warning,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Menampilkan stok menipis (≤ ${AppConfig.lowStockThreshold})',
+                      style: TextStyle(
+                        color: context.warning,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ),
+                  InkWell(
+                    onTap: () => context.read<ItemProvider>().setLowStockOnly(
+                      false,
+                    ),
+                    borderRadius: BorderRadius.circular(8),
+                    child: Padding(
+                      padding: const EdgeInsets.all(4),
+                      child: Icon(
+                        PhosphorIcons.x,
+                        size: 18,
+                        color: context.colors.onSurfaceVariant,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
           Expanded(
             child: provider.loading && provider.items.isEmpty
                 ? const LoadingWidget(text: 'Memuat barang...')
@@ -234,7 +281,7 @@ class _ItemCard extends StatelessWidget {
             children: [
               IconBadge(
                 icon: PhosphorIcons.package,
-                color: lowStock ? context.warning : context.primary,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
                 size: 44,
               ),
               const SizedBox(width: 12),

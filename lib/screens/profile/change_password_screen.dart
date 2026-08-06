@@ -20,7 +20,9 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
   final _service = AuthService();
 
   bool _loading = false;
-  bool _obscure = true;
+  bool _obscureCurrent = true;
+  bool _obscureNew = true;
+  bool _obscureConfirm = true;
 
   @override
   void dispose() {
@@ -38,6 +40,51 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
       return 'Minimal 8 karakter';
     }
     return null;
+  }
+
+  /// Label kecil statis di atas field — selalu terlihat, tidak jadi placeholder.
+  Widget _buildFieldLabel(String text) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6),
+      child: Text(
+        text,
+        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+          color: Theme.of(context).colorScheme.onSurfaceVariant,
+          fontWeight: FontWeight.w500,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPasswordField({
+    required String label,
+    required TextEditingController controller,
+    required bool obscure,
+    required ValueChanged<bool> onToggle,
+    String? hint,
+    String? Function(String?)? validator,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildFieldLabel(label),
+        TextFormField(
+          controller: controller,
+          obscureText: obscure,
+          decoration: InputDecoration(
+            hintText: hint,
+            suffixIcon: IconButton(
+              onPressed: () => onToggle(!obscure),
+              icon: Icon(
+                obscure ? PhosphorIcons.eyeSlash : PhosphorIcons.eye,
+                size: 20,
+              ),
+            ),
+          ),
+          validator: validator,
+        ),
+      ],
+    );
   }
 
   Future<void> _submit() async {
@@ -85,48 +132,34 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      TextFormField(
+                      _buildPasswordField(
+                        label: 'Password saat ini',
                         controller: _currentController,
-                        obscureText: _obscure,
-                        decoration: InputDecoration(
-                          labelText: 'Password Saat Ini',
-                          prefixIcon: const Icon(
-                            PhosphorIcons.lockSimple,
-                            size: 20,
-                          ),
-                          suffixIcon: IconButton(
-                            onPressed: () =>
-                                setState(() => _obscure = !_obscure),
-                            icon: Icon(
-                              _obscure
-                                  ? PhosphorIcons.eyeSlash
-                                  : PhosphorIcons.eye,
-                              size: 20,
-                            ),
-                          ),
-                        ),
+                        obscure: _obscureCurrent,
+                        onToggle: (v) =>
+                            setState(() => _obscureCurrent = v),
+                        hint: 'Password yang sedang aktif',
                         validator: (v) => v == null || v.trim().isEmpty
                             ? 'Password saat ini wajib diisi'
                             : null,
                       ),
                       const SizedBox(height: 12),
-                      TextFormField(
+                      _buildPasswordField(
+                        label: 'Password baru',
                         controller: _newController,
-                        obscureText: _obscure,
-                        decoration: const InputDecoration(
-                          labelText: 'Password Baru',
-                          prefixIcon: Icon(PhosphorIcons.lockSimple, size: 20),
-                        ),
+                        obscure: _obscureNew,
+                        onToggle: (v) => setState(() => _obscureNew = v),
+                        hint: 'Minimal 8 karakter',
                         validator: _validateNew,
                       ),
                       const SizedBox(height: 12),
-                      TextFormField(
+                      _buildPasswordField(
+                        label: 'Konfirmasi password baru',
                         controller: _confirmController,
-                        obscureText: _obscure,
-                        decoration: const InputDecoration(
-                          labelText: 'Konfirmasi Password Baru',
-                          prefixIcon: Icon(PhosphorIcons.lockSimple, size: 20),
-                        ),
+                        obscure: _obscureConfirm,
+                        onToggle: (v) =>
+                            setState(() => _obscureConfirm = v),
+                        hint: 'Ulangi password baru',
                         validator: _validateNew,
                       ),
                       const SizedBox(height: 12),

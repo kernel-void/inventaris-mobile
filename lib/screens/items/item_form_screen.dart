@@ -110,7 +110,7 @@ class _ItemFormScreenState extends State<ItemFormScreen> {
 
   Widget _buildSection(String title) {
     return Padding(
-      padding: const EdgeInsets.only(top: 20, bottom: 4),
+      padding: const EdgeInsets.only(top: 24, bottom: 16),
       child: Text(
         title,
         style: Theme.of(context).textTheme.bodySmall?.copyWith(
@@ -118,6 +118,43 @@ class _ItemFormScreenState extends State<ItemFormScreen> {
           fontWeight: FontWeight.w700,
         ),
       ),
+    );
+  }
+
+  /// Label kecil statis di atas field — selalu terlihat, tidak jadi placeholder.
+  Widget _buildFieldLabel(String text) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6),
+      child: Text(
+        text,
+        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+          color: Theme.of(context).colorScheme.onSurfaceVariant,
+          fontWeight: FontWeight.w500,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildField({
+    required String label,
+    required TextEditingController controller,
+    TextInputType? keyboardType,
+    String? hint,
+    int? maxLines,
+    String? Function(String?)? validator,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildFieldLabel(label),
+        TextFormField(
+          controller: controller,
+          keyboardType: keyboardType,
+          maxLines: maxLines,
+          decoration: InputDecoration(hintText: hint),
+          validator: validator,
+        ),
+      ],
     );
   }
 
@@ -162,62 +199,72 @@ class _ItemFormScreenState extends State<ItemFormScreen> {
                         const SizedBox(height: 16),
                       ],
                       _buildSection('INFORMASI DASAR'),
-                      TextFormField(
+                      _buildField(
+                        label: 'Nama Barang',
                         controller: _nameController,
-                        decoration: const InputDecoration(
-                          labelText: 'Nama Barang',
-                        ),
+                        hint: 'Contoh: Laptop Acer Aspire 5',
                         validator: (v) => v == null || v.trim().isEmpty
                             ? 'Nama wajib diisi'
                             : null,
                       ),
                       const SizedBox(height: 12),
                       Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Expanded(
-                            child: DropdownButtonFormField<int>(
-                              isExpanded: true,
-                              initialValue: _categoryId,
-                              decoration: const InputDecoration(
-                                labelText: 'Kategori',
-                              ),
-                              items: provider.categories
-                                  .map(
-                                    (c) => DropdownMenuItem(
-                                      value: c.id,
-                                      child: Text(c.name),
-                                    ),
-                                  )
-                                  .toList(),
-                              onChanged: (v) => setState(() => _categoryId = v),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                _buildFieldLabel('Kategori'),
+                                DropdownButtonFormField<int>(
+                                  isExpanded: true,
+                                  initialValue: _categoryId,
+                                  hint: const Text('-- Pilih Kategori --'),
+                                  items: provider.categories
+                                      .map(
+                                        (c) => DropdownMenuItem(
+                                          value: c.id,
+                                          child: Text(c.name),
+                                        ),
+                                      )
+                                      .toList(),
+                                  onChanged: (v) =>
+                                      setState(() => _categoryId = v),
+                                ),
+                              ],
                             ),
                           ),
                           const SizedBox(width: 12),
                           Expanded(
-                            child: DropdownButtonFormField<int>(
-                              isExpanded: true,
-                              initialValue: _roomId,
-                              decoration: const InputDecoration(
-                                labelText: 'Ruangan',
-                              ),
-                              items: provider.rooms
-                                  .map(
-                                    (r) => DropdownMenuItem(
-                                      value: r.id,
-                                      child: Text(r.name),
-                                    ),
-                                  )
-                                  .toList(),
-                              onChanged: (v) => setState(() => _roomId = v),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                _buildFieldLabel('Ruangan'),
+                                DropdownButtonFormField<int>(
+                                  isExpanded: true,
+                                  initialValue: _roomId,
+                                  hint: const Text('-- Pilih Ruangan --'),
+                                  items: provider.rooms
+                                      .map(
+                                        (r) => DropdownMenuItem(
+                                          value: r.id,
+                                          child: Text(r.name),
+                                        ),
+                                      )
+                                      .toList(),
+                                  onChanged: (v) =>
+                                      setState(() => _roomId = v),
+                                ),
+                              ],
                             ),
                           ),
                         ],
                       ),
                       const SizedBox(height: 12),
+                      _buildFieldLabel('Kondisi'),
                       DropdownButtonFormField<String>(
                         isExpanded: true,
                         initialValue: _condition,
-                        decoration: const InputDecoration(labelText: 'Kondisi'),
                         items: _conditions
                             .map(
                               (c) => DropdownMenuItem(value: c, child: Text(c)),
@@ -228,46 +275,42 @@ class _ItemFormScreenState extends State<ItemFormScreen> {
                       ),
                       _buildSection('DETAIL'),
                       Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Expanded(
-                            child: TextFormField(
+                            child: _buildField(
+                              label: 'Merk',
                               controller: _brandController,
-                              decoration: const InputDecoration(
-                                labelText: 'Merk',
-                              ),
                             ),
                           ),
                           const SizedBox(width: 12),
                           Expanded(
-                            child: TextFormField(
+                            child: _buildField(
+                              label: 'Satuan',
                               controller: _unitController,
-                              decoration: const InputDecoration(
-                                labelText: 'Satuan',
-                              ),
+                              hint: 'unit, buah, set, ...',
                             ),
                           ),
                         ],
                       ),
                       const SizedBox(height: 12),
                       Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Expanded(
-                            child: TextFormField(
+                            child: _buildField(
+                              label: 'Tahun',
                               controller: _yearController,
                               keyboardType: TextInputType.number,
-                              decoration: const InputDecoration(
-                                labelText: 'Tahun',
-                              ),
+                              hint: 'YYYY',
                             ),
                           ),
                           const SizedBox(width: 12),
                           Expanded(
-                            child: TextFormField(
+                            child: _buildField(
+                              label: 'Stok',
                               controller: _stockController,
                               keyboardType: TextInputType.number,
-                              decoration: const InputDecoration(
-                                labelText: 'Stok',
-                              ),
                               validator: (v) {
                                 final n = int.tryParse(v ?? '');
                                 if (n == null || n < 0) {
@@ -280,13 +323,10 @@ class _ItemFormScreenState extends State<ItemFormScreen> {
                         ],
                       ),
                       const SizedBox(height: 12),
-                      TextFormField(
+                      _buildField(
+                        label: 'Deskripsi',
                         controller: _descriptionController,
                         maxLines: 3,
-                        decoration: const InputDecoration(
-                          labelText: 'Deskripsi',
-                          alignLabelWithHint: true,
-                        ),
                       ),
                       const SizedBox(height: 28),
                       FilledButton(

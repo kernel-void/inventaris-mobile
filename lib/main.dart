@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 
 import 'core/api/api_client.dart';
 import 'core/api/api_exception.dart';
+import 'core/config/app_config.dart';
 import 'core/theme/app_theme.dart';
 import 'providers/auth_provider.dart';
 import 'providers/item_provider.dart';
@@ -87,7 +88,8 @@ class _AppBootstrapState extends State<AppBootstrap> {
   Future<void> _boot() async {
     final auth = context.read<AuthProvider>();
     try {
-      await ApiClient.instance.request('/status');
+      final response = await ApiClient.instance.request('/status');
+      _applyStatus(response.data);
     } on ApiException catch (e) {
       if (e.statusCode == 503) {
         // Handler onMaintenance sudah menampilkan layar maintenance.
@@ -102,6 +104,16 @@ class _AppBootstrapState extends State<AppBootstrap> {
             loggedIn ? const DashboardScreen() : const LoginScreen(),
       ),
     );
+  }
+
+  void _applyStatus(Object? data) {
+    if (data is! Map<String, dynamic>) return;
+    final payload = data['data'];
+    if (payload is! Map<String, dynamic>) return;
+    final threshold = payload['low_stock_threshold'];
+    if (threshold is int) {
+      AppConfig.lowStockThreshold = threshold;
+    }
   }
 
   @override
