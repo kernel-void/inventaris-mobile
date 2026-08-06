@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
+import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 import 'package:provider/provider.dart';
 
+import '../../core/theme/app_theme.dart';
+import '../../core/widgets/custom_snackbar.dart';
 import '../../models/user.dart';
 import '../../providers/user_provider.dart';
-import '../../theme/app_theme.dart';
 import '../../widgets/error_view.dart';
 import '../../widgets/loading_widget.dart';
 
@@ -28,7 +31,9 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Hapus User?'),
-        content: Text('User "${user.name}" akan dihapus. Tindakan ini tidak bisa dibatalkan.'),
+        content: Text(
+          'User "${user.name}" akan dihapus. Tindakan ini tidak bisa dibatalkan.',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
@@ -36,7 +41,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
           ),
           TextButton(
             onPressed: () => Navigator.of(context).pop(true),
-            style: TextButton.styleFrom(foregroundColor: AppTheme.danger),
+            style: TextButton.styleFrom(foregroundColor: context.danger),
             child: const Text('Hapus'),
           ),
         ],
@@ -54,11 +59,10 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
 
   void _showSnack(String message, {bool isError = false}) {
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        backgroundColor: isError ? AppTheme.danger : null,
-        content: Text(message),
-      ),
+    showAppSnackBar(
+      context,
+      message,
+      type: isError ? AppSnackType.error : AppSnackType.success,
     );
   }
 
@@ -85,66 +89,76 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
       appBar: AppBar(title: const Text('Manajemen User')),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _openForm(),
-        icon: const Icon(Icons.add),
+        icon: const Icon(PhosphorIcons.userPlus),
         label: const Text('User'),
       ),
       body: provider.loading && provider.users.isEmpty
           ? const LoadingWidget(text: 'Memuat user...')
           : provider.error != null && provider.users.isEmpty
-              ? ErrorView(
-                  message: provider.error!,
-                  onRetry: () => provider.loadUsers(),
-                )
-              : RefreshIndicator(
-                  onRefresh: () => provider.loadUsers(),
-                  child: ListView(
-                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 96),
+          ? ErrorView(
+              message: provider.error!,
+              onRetry: () => provider.loadUsers(),
+            )
+          : RefreshIndicator(
+              onRefresh: () => provider.loadUsers(),
+              child: ListView(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 96),
+                children: [
+                  Row(
                     children: [
-                      Row(
-                        children: [
-                          _MiniStat(
-                            icon: Icons.group_outlined,
-                            label: 'Total',
-                            value: '${provider.total}',
-                            color: AppTheme.primary,
-                          ),
-                          const SizedBox(width: 12),
-                          _MiniStat(
-                            icon: Icons.circle,
-                            label: 'Online',
-                            value: '${provider.online}',
-                            color: AppTheme.success,
-                          ),
-                        ],
+                      _MiniStat(
+                        icon: PhosphorIcons.users,
+                        label: 'Total',
+                        value: '${provider.total}',
                       ),
-                      const SizedBox(height: 16),
-                      if (provider.users.isEmpty)
-                        Container(
-                          padding: const EdgeInsets.symmetric(vertical: 40),
-                          decoration: BoxDecoration(
-                            color: AppTheme.surfaceMuted,
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                          child: const Column(
-                            children: [
-                              Icon(Icons.group_outlined,
-                                  size: 48, color: AppTheme.textSecondary),
-                              SizedBox(height: 8),
-                              Text('Belum ada user'),
-                            ],
-                          ),
-                        )
-                      else
-                        ...provider.users.map(
-                          (u) => _UserTile(
-                            user: u,
-                            onEdit: () => _openForm(user: u),
-                            onDelete: () => _confirmDelete(u),
-                          ),
-                        ),
+                      const SizedBox(width: 12),
+                      _MiniStat(
+                        icon: PhosphorIcons.checkCircle,
+                        label: 'Online',
+                        value: '${provider.online}',
+                        color: context.success,
+                      ),
                     ],
                   ),
-                ),
+                  const SizedBox(height: 16),
+                  if (provider.users.isEmpty)
+                    Container(
+                      padding: const EdgeInsets.symmetric(vertical: 40),
+                      decoration: BoxDecoration(
+                        color: context.colors.surfaceContainer,
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: Column(
+                        children: [
+                          Icon(
+                            PhosphorIcons.users,
+                            size: 48,
+                            color: context.colors.onSurfaceVariant,
+                          ),
+                          const SizedBox(height: 8),
+                          Text('Belum ada user'),
+                        ],
+                      ),
+                    )
+                  else
+                    ...provider.users.asMap().entries.map(
+                      (e) =>
+                          _UserTile(
+                                user: e.value,
+                                onEdit: () => _openForm(user: e.value),
+                                onDelete: () => _confirmDelete(e.value),
+                              )
+                              .animate(delay: (e.key * 30).ms)
+                              .fadeIn(duration: 300.ms)
+                              .moveY(
+                                begin: 8,
+                                duration: 300.ms,
+                                curve: Curves.easeOut,
+                              ),
+                    ),
+                ],
+              ),
+            ),
     );
   }
 }
@@ -154,23 +168,26 @@ class _MiniStat extends StatelessWidget {
     required this.icon,
     required this.label,
     required this.value,
-    required this.color,
+    this.color,
   });
 
   final IconData icon;
   final String label;
   final String value;
-  final Color color;
+  final Color? color;
 
   @override
   Widget build(BuildContext context) {
+    final accent = color ?? context.primary;
     return Expanded(
       child: Container(
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: context.colors.surface,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: AppTheme.border),
+          border: Border.all(
+            color: Theme.of(context).dividerTheme.color ?? Colors.transparent,
+          ),
         ),
         child: Row(
           children: [
@@ -178,21 +195,22 @@ class _MiniStat extends StatelessWidget {
               width: 36,
               height: 36,
               decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.10),
+                color: accent.withValues(alpha: 0.10),
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: Icon(icon, size: 18, color: color),
+              child: Icon(icon, size: 18, color: accent),
             ),
             const SizedBox(width: 10),
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(label, style: Theme.of(context).textTheme.bodySmall),
-                Text(value,
-                    style: Theme.of(context)
-                        .textTheme
-                        .titleSmall
-                        ?.copyWith(fontWeight: FontWeight.w800)),
+                Text(
+                  value,
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w800),
+                ),
               ],
             ),
           ],
@@ -214,8 +232,11 @@ class _UserTile extends StatelessWidget {
   final VoidCallback onDelete;
 
   String _initials(String name) {
-    final parts =
-        name.trim().split(RegExp(r'\s+')).where((p) => p.isNotEmpty).toList();
+    final parts = name
+        .trim()
+        .split(RegExp(r'\s+'))
+        .where((p) => p.isNotEmpty)
+        .toList();
     if (parts.isEmpty) return '?';
     if (parts.length == 1) return parts.first[0].toUpperCase();
     return (parts.first[0] + parts.last[0]).toUpperCase();
@@ -231,11 +252,11 @@ class _UserTile extends StatelessWidget {
           children: [
             CircleAvatar(
               radius: 20,
-              backgroundColor: AppTheme.primary.withValues(alpha: 0.12),
+              backgroundColor: context.primary.withValues(alpha: 0.12),
               child: Text(
                 _initials(user.name),
-                style: const TextStyle(
-                  color: AppTheme.primary,
+                style: TextStyle(
+                  color: context.primary,
                   fontWeight: FontWeight.w800,
                   fontSize: 13,
                 ),
@@ -268,11 +289,13 @@ class _UserTile extends StatelessWidget {
                           .map(
                             (r) => Container(
                               padding: const EdgeInsets.symmetric(
-                                  horizontal: 8, vertical: 3),
+                                horizontal: 8,
+                                vertical: 3,
+                              ),
                               decoration: BoxDecoration(
                                 color: r == 'admin'
-                                    ? AppTheme.danger.withValues(alpha: 0.10)
-                                    : AppTheme.primary.withValues(alpha: 0.10),
+                                    ? context.danger.withValues(alpha: 0.10)
+                                    : context.primary.withValues(alpha: 0.10),
                                 borderRadius: BorderRadius.circular(20),
                               ),
                               child: Text(
@@ -281,8 +304,8 @@ class _UserTile extends StatelessWidget {
                                   fontSize: 10,
                                   fontWeight: FontWeight.w700,
                                   color: r == 'admin'
-                                      ? AppTheme.danger
-                                      : AppTheme.primary,
+                                      ? context.danger
+                                      : context.primary,
                                 ),
                               ),
                             ),
@@ -374,13 +397,13 @@ class _UserFormSheetState extends State<_UserFormSheet> {
       }
       if (mounted) {
         Navigator.of(context).pop();
-        widget.onSaved(isEdit ? 'User berhasil diperbarui' : 'User berhasil ditambahkan');
+        widget.onSaved(
+          isEdit ? 'User berhasil diperbarui' : 'User berhasil ditambahkan',
+        );
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(e.toString())),
-        );
+        showAppSnackBar(context, e.toString(), type: AppSnackType.error);
       }
     } finally {
       if (mounted) setState(() => _loading = false);
@@ -396,9 +419,9 @@ class _UserFormSheetState extends State<_UserFormSheet> {
       padding: EdgeInsets.only(bottom: bottomInset),
       child: Container(
         padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surface,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
         ),
         child: SingleChildScrollView(
           child: Form(
@@ -412,7 +435,9 @@ class _UserFormSheetState extends State<_UserFormSheet> {
                     width: 40,
                     height: 4,
                     decoration: BoxDecoration(
-                      color: AppTheme.border,
+                      color:
+                          Theme.of(context).dividerTheme.color ??
+                          Colors.transparent,
                       borderRadius: BorderRadius.circular(4),
                     ),
                   ),
@@ -435,8 +460,12 @@ class _UserFormSheetState extends State<_UserFormSheet> {
                   keyboardType: TextInputType.emailAddress,
                   decoration: const InputDecoration(labelText: 'Email'),
                   validator: (v) {
-                    if (v == null || v.trim().isEmpty) return 'Email wajib diisi';
-                    if (!v.contains('@')) return 'Email tidak valid';
+                    if (v == null || v.trim().isEmpty) {
+                      return 'Email wajib diisi';
+                    }
+                    if (!v.contains('@')) {
+                      return 'Email tidak valid';
+                    }
                     return null;
                   },
                 ),
@@ -451,8 +480,9 @@ class _UserFormSheetState extends State<_UserFormSheet> {
                   ),
                   validator: isEdit
                       ? null
-                      : (v) =>
-                          v == null || v.length < 8 ? 'Minimal 8 karakter' : null,
+                      : (v) => v == null || v.length < 8
+                            ? 'Minimal 8 karakter'
+                            : null,
                 ),
                 const SizedBox(height: 16),
                 Text('Peran', style: Theme.of(context).textTheme.titleSmall),
@@ -477,7 +507,7 @@ class _UserFormSheetState extends State<_UserFormSheet> {
                       .toList(),
                 ),
                 const SizedBox(height: 20),
-                ElevatedButton.icon(
+                FilledButton.icon(
                   onPressed: _loading ? null : _submit,
                   icon: _loading
                       ? const SizedBox(
@@ -485,7 +515,7 @@ class _UserFormSheetState extends State<_UserFormSheet> {
                           height: 18,
                           child: CircularProgressIndicator(strokeWidth: 2),
                         )
-                      : const Icon(Icons.save_outlined, size: 20),
+                      : const Icon(PhosphorIcons.floppyDisk, size: 20),
                   label: Text(isEdit ? 'Simpan Perubahan' : 'Tambah User'),
                 ),
               ],

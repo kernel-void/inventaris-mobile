@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
-
-import '../theme/app_theme.dart';
+import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 
 class MasterFormField {
   const MasterFormField({
@@ -89,9 +88,9 @@ class _MasterFormSheetState extends State<_MasterFormSheet> {
       padding: EdgeInsets.only(bottom: bottom),
       child: Container(
         padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
-        decoration: const BoxDecoration(
-          color: AppTheme.surface,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surface,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
         ),
         child: SingleChildScrollView(
           child: Form(
@@ -109,7 +108,7 @@ class _MasterFormSheetState extends State<_MasterFormSheet> {
                     IconButton(
                       tooltip: 'Tutup',
                       onPressed: () => Navigator.of(context).pop(),
-                      icon: const Icon(Icons.close),
+                      icon: const Icon(PhosphorIcons.x),
                     ),
                   ],
                 ),
@@ -132,7 +131,7 @@ class _MasterFormSheetState extends State<_MasterFormSheet> {
                   if (i < widget.fields.length - 1) const SizedBox(height: 12),
                 ],
                 const SizedBox(height: 24),
-                ElevatedButton(
+                FilledButton(
                   onPressed: _submit,
                   child: Text(widget.submitLabel),
                 ),

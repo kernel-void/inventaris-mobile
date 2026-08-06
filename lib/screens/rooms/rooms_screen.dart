@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
+import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 import 'package:provider/provider.dart';
 
+import '../../core/theme/app_theme.dart';
+import '../../core/widgets/custom_snackbar.dart';
 import '../../models/room.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/item_provider.dart';
-import '../../theme/app_theme.dart';
 import '../../widgets/error_view.dart';
 import '../../widgets/loading_widget.dart';
 import '../../widgets/master_form_sheet.dart';
@@ -66,7 +69,9 @@ class _RoomsScreenState extends State<RoomsScreen> {
     final provider = context.read<ItemProvider>();
     final payload = {
       'name': result['name'],
-      'location': result['location']?.isEmpty ?? true ? null : result['location'],
+      'location': result['location']?.isEmpty ?? true
+          ? null
+          : result['location'],
       'pic': result['pic']?.isEmpty ?? true ? null : result['pic'],
     };
     try {
@@ -75,7 +80,9 @@ class _RoomsScreenState extends State<RoomsScreen> {
       } else {
         await provider.updateRoom(room.id, payload);
       }
-      _showSnack('Ruangan berhasil ${room == null ? 'ditambahkan' : 'diperbarui'}');
+      _showSnack(
+        'Ruangan berhasil ${room == null ? 'ditambahkan' : 'diperbarui'}',
+      );
     } catch (e) {
       _showSnack(e.toString(), isError: true);
     }
@@ -96,7 +103,7 @@ class _RoomsScreenState extends State<RoomsScreen> {
           ),
           TextButton(
             onPressed: () => Navigator.of(context).pop(true),
-            style: TextButton.styleFrom(foregroundColor: AppTheme.danger),
+            style: TextButton.styleFrom(foregroundColor: context.danger),
             child: const Text('Hapus'),
           ),
         ],
@@ -114,11 +121,10 @@ class _RoomsScreenState extends State<RoomsScreen> {
 
   void _showSnack(String message, {bool isError = false}) {
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        backgroundColor: isError ? AppTheme.danger : null,
-        content: Text(message),
-      ),
+    showAppSnackBar(
+      context,
+      message,
+      type: isError ? AppSnackType.error : AppSnackType.success,
     );
   }
 
@@ -142,10 +148,11 @@ class _RoomsScreenState extends State<RoomsScreen> {
       final q = _query.trim().toLowerCase();
       final rooms = provider.rooms.where((r) {
         if (q.isEmpty) return true;
-        return [r.name, r.location ?? '', r.pic ?? '']
-            .join(' ')
-            .toLowerCase()
-            .contains(q);
+        return [
+          r.name,
+          r.location ?? '',
+          r.pic ?? '',
+        ].join(' ').toLowerCase().contains(q);
       }).toList();
 
       body = Column(
@@ -174,11 +181,22 @@ class _RoomsScreenState extends State<RoomsScreen> {
                       itemBuilder: (context, index) {
                         final room = rooms[index];
                         return _RoomCard(
-                          room: room,
-                          canManage: canUpdate || canDelete,
-                          onEdit: canUpdate ? () => _openForm(room: room) : null,
-                          onDelete: canDelete ? () => _confirmDelete(room) : null,
-                        );
+                              room: room,
+                              canManage: canUpdate || canDelete,
+                              onEdit: canUpdate
+                                  ? () => _openForm(room: room)
+                                  : null,
+                              onDelete: canDelete
+                                  ? () => _confirmDelete(room)
+                                  : null,
+                            )
+                            .animate(delay: (index * 30).ms)
+                            .fadeIn(duration: 300.ms)
+                            .moveY(
+                              begin: 8,
+                              duration: 300.ms,
+                              curve: Curves.easeOut,
+                            );
                       },
                     ),
                   ),
@@ -192,7 +210,7 @@ class _RoomsScreenState extends State<RoomsScreen> {
       floatingActionButton: canCreate
           ? FloatingActionButton.extended(
               onPressed: () => _openForm(),
-              icon: const Icon(Icons.add),
+              icon: const Icon(PhosphorIcons.plus),
               label: const Text('Ruangan'),
             )
           : null,
@@ -226,10 +244,14 @@ class _RoomCard extends StatelessWidget {
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
         leading: CircleAvatar(
           radius: 20,
-          backgroundColor:
-              Theme.of(context).colorScheme.tertiary.withValues(alpha: 0.12),
-          child: Icon(Icons.meeting_room_outlined,
-              size: 20, color: Theme.of(context).colorScheme.tertiary),
+          backgroundColor: Theme.of(
+            context,
+          ).colorScheme.primary.withValues(alpha: 0.10),
+          child: Icon(
+            PhosphorIcons.building,
+            size: 20,
+            color: Theme.of(context).colorScheme.primary,
+          ),
         ),
         title: Text(room.name, style: Theme.of(context).textTheme.titleSmall),
         subtitle: detail.isNotEmpty
@@ -244,15 +266,9 @@ class _RoomCard extends StatelessWidget {
                 },
                 itemBuilder: (context) => [
                   if (onEdit != null)
-                    const PopupMenuItem(
-                      value: 'edit',
-                      child: Text('Edit'),
-                    ),
+                    const PopupMenuItem(value: 'edit', child: Text('Edit')),
                   if (onDelete != null)
-                    const PopupMenuItem(
-                      value: 'delete',
-                      child: Text('Hapus'),
-                    ),
+                    const PopupMenuItem(value: 'delete', child: Text('Hapus')),
                 ],
               )
             : null,

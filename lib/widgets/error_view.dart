@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
+
+import '../core/theme/app_theme.dart';
 
 class ErrorView extends StatelessWidget {
   const ErrorView({super.key, required this.message, required this.onRetry});
@@ -10,14 +13,14 @@ class ErrorView extends StatelessWidget {
   Widget build(BuildContext context) {
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(24),
+        padding: const EdgeInsets.all(AppTheme.pagePadding),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(
-              Icons.cloud_off_rounded,
+              PhosphorIcons.cloudSlash,
               size: 48,
-              color: Theme.of(context).colorScheme.error,
+              color: context.colors.onSurfaceVariant,
             ),
             const SizedBox(height: 12),
             Text(
@@ -28,7 +31,7 @@ class ErrorView extends StatelessWidget {
             const SizedBox(height: 16),
             FilledButton.icon(
               onPressed: onRetry,
-              icon: const Icon(Icons.refresh),
+              icon: const Icon(PhosphorIcons.arrowsClockwise),
               label: const Text('Coba Lagi'),
             ),
           ],

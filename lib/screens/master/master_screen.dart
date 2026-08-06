@@ -25,17 +25,12 @@ class MasterScreen extends StatelessWidget {
               indicator: BoxDecoration(
                 color: Theme.of(context).colorScheme.surface,
                 borderRadius: BorderRadius.circular(10),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.05),
-                    blurRadius: 4,
-                  ),
-                ],
               ),
               indicatorSize: TabBarIndicatorSize.tab,
               labelColor: Theme.of(context).colorScheme.primary,
-              unselectedLabelColor:
-                  Theme.of(context).colorScheme.onSurfaceVariant,
+              unselectedLabelColor: Theme.of(
+                context,
+              ).colorScheme.onSurfaceVariant,
               tabs: const [
                 Tab(text: 'Kategori'),
                 Tab(text: 'Ruangan'),
@@ -43,12 +38,7 @@ class MasterScreen extends StatelessWidget {
             ),
           ),
           const Expanded(
-            child: TabBarView(
-              children: [
-                CategoriesScreen(),
-                RoomsScreen(),
-              ],
-            ),
+            child: TabBarView(children: [CategoriesScreen(), RoomsScreen()]),
           ),
         ],
       ),

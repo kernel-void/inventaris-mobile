@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
+import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 import 'package:provider/provider.dart';
 
+import '../../core/theme/app_theme.dart';
 import '../../models/outgoing_item.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/item_provider.dart';
 import '../../providers/transaction_provider.dart';
-import '../../theme/app_theme.dart';
 import '../../widgets/error_view.dart';
 import '../../widgets/icon_badge.dart';
 import '../../widgets/loading_widget.dart';
@@ -33,7 +35,8 @@ class _OutgoingScreenState extends State<OutgoingScreen> {
     final provider = context.watch<TransactionProvider>();
     final auth = context.watch<AuthProvider>();
     final itemProvider = context.watch<ItemProvider>();
-    final isEmptyByFilter = provider.outgoing.isEmpty &&
+    final isEmptyByFilter =
+        provider.outgoing.isEmpty &&
         !provider.outgoingFilter.isEmpty &&
         !provider.loading;
 
@@ -50,31 +53,37 @@ class _OutgoingScreenState extends State<OutgoingScreen> {
             child: provider.loading && provider.outgoing.isEmpty
                 ? const LoadingWidget(text: 'Memuat barang keluar...')
                 : provider.error != null && provider.outgoing.isEmpty
-                    ? ErrorView(
-                        message: provider.error!,
-                        onRetry: () => provider.loadOutgoing(),
-                      )
-                    : provider.outgoing.isEmpty
-                        ? Center(
-                            child: Text(
-                              isEmptyByFilter
-                                  ? 'Tidak ditemukan dengan filter ini'
-                                  : 'Belum ada barang keluar',
-                            ),
-                          )
-                        : RefreshIndicator(
-                            onRefresh: () => provider.loadOutgoing(),
-                            child: ListView.separated(
-                              padding: const EdgeInsets.fromLTRB(16, 8, 16, 96),
-                              itemCount: provider.outgoing.length,
-                              separatorBuilder: (_, _) =>
-                                  const SizedBox(height: 8),
-                              itemBuilder: (context, index) {
-                                final record = provider.outgoing[index];
-                                return _OutgoingTile(record: record);
-                              },
-                            ),
-                          ),
+                ? ErrorView(
+                    message: provider.error!,
+                    onRetry: () => provider.loadOutgoing(),
+                  )
+                : provider.outgoing.isEmpty
+                ? Center(
+                    child: Text(
+                      isEmptyByFilter
+                          ? 'Tidak ditemukan dengan filter ini'
+                          : 'Belum ada barang keluar',
+                    ),
+                  )
+                : RefreshIndicator(
+                    onRefresh: () => provider.loadOutgoing(),
+                    child: ListView.separated(
+                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 96),
+                      itemCount: provider.outgoing.length,
+                      separatorBuilder: (_, _) => const SizedBox(height: 8),
+                      itemBuilder: (context, index) {
+                        final record = provider.outgoing[index];
+                        return _OutgoingTile(record: record)
+                            .animate(delay: (index * 30).ms)
+                            .fadeIn(duration: 300.ms)
+                            .moveY(
+                              begin: 8,
+                              duration: 300.ms,
+                              curve: Curves.easeOut,
+                            );
+                      },
+                    ),
+                  ),
           ),
         ],
       ),
@@ -93,7 +102,7 @@ class _OutgoingScreenState extends State<OutgoingScreen> {
                   context.read<ItemProvider>().loadItems(refresh: true);
                 }
               },
-              icon: const Icon(Icons.add),
+              icon: const Icon(PhosphorIcons.plus),
               label: const Text('Barang Keluar'),
             )
           : null,
@@ -110,8 +119,8 @@ class _OutgoingTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final destination =
         record.destination != null && record.destination!.isNotEmpty
-            ? record.destination
-            : null;
+        ? record.destination
+        : null;
 
     return Card(
       margin: EdgeInsets.zero,
@@ -119,9 +128,9 @@ class _OutgoingTile extends StatelessWidget {
         padding: const EdgeInsets.all(12),
         child: Row(
           children: [
-            const IconBadge(
-              icon: Icons.north_east,
-              color: AppTheme.danger,
+            IconBadge(
+              icon: PhosphorIcons.arrowUpRight,
+              color: context.danger,
               size: 44,
             ),
             const SizedBox(width: 12),
@@ -129,10 +138,12 @@ class _OutgoingTile extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(record.item?.name ?? 'Barang',
-                      style: Theme.of(context).textTheme.titleSmall,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis),
+                  Text(
+                    record.item?.name ?? 'Barang',
+                    style: Theme.of(context).textTheme.titleSmall,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
                   const SizedBox(height: 2),
                   Text(
                     [
@@ -152,13 +163,13 @@ class _OutgoingTile extends StatelessWidget {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
               decoration: BoxDecoration(
-                color: AppTheme.danger.withValues(alpha: 0.10),
+                color: context.danger.withValues(alpha: 0.10),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Text(
                 '-${record.quantity}',
-                style: const TextStyle(
-                  color: AppTheme.danger,
+                style: TextStyle(
+                  color: context.danger,
                   fontWeight: FontWeight.w700,
                   fontSize: 13,
                 ),

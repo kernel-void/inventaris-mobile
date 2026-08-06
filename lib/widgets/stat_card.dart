@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../theme/app_theme.dart';
+import '../core/theme/app_theme.dart';
 
 /// Kartu statistik ringkas untuk dashboard.
 class StatCard extends StatelessWidget {
@@ -19,30 +19,16 @@ class StatCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final accent = color ?? AppTheme.primary;
+    final accent = color ?? context.primary;
 
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(AppTheme.cardPadding),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            accent.withValues(alpha: 0.10),
-            Colors.white,
-            Colors.white,
-          ],
-          stops: const [0, 0.55, 1],
+        color: context.colors.surface,
+        borderRadius: BorderRadius.circular(AppTheme.radiusCard),
+        border: Border.all(
+          color: Theme.of(context).dividerTheme.color ?? Colors.transparent,
         ),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: accent.withValues(alpha: 0.16)),
-        boxShadow: [
-          BoxShadow(
-            color: accent.withValues(alpha: 0.07),
-            blurRadius: 16,
-            offset: const Offset(0, 6),
-          ),
-        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -51,23 +37,19 @@ class StatCard extends StatelessWidget {
             width: 38,
             height: 38,
             decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [accent, accent.withValues(alpha: 0.65)],
-              ),
-              borderRadius: BorderRadius.circular(12),
+              color: accent.withValues(alpha: 0.10),
+              borderRadius: BorderRadius.circular(10),
             ),
-            child: Icon(icon, size: 19, color: Colors.white),
+            child: Icon(icon, size: 19, color: accent),
           ),
           const Spacer(),
           FittedBox(
             fit: BoxFit.scaleDown,
             child: Text(
               value,
-              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+              style: Theme.of(context).textTheme.displaySmall?.copyWith(
                     fontSize: 24,
-                    fontWeight: FontWeight.w800,
+                    fontWeight: FontWeight.w700,
                     letterSpacing: -0.5,
                   ),
               maxLines: 1,
@@ -76,9 +58,7 @@ class StatCard extends StatelessWidget {
           const SizedBox(height: 2),
           Text(
             label,
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
+            style: Theme.of(context).textTheme.bodySmall,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),

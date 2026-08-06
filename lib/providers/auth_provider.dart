@@ -1,14 +1,21 @@
 import 'package:flutter/foundation.dart';
 
+import '../core/api/api_client.dart';
 import '../models/user.dart';
 import '../services/auth_service.dart';
 
 enum AuthStatus { unknown, unauthenticated, authenticated }
 
 class AuthProvider extends ChangeNotifier {
-  AuthProvider({AuthService? authService}) : _authService = authService ?? AuthService();
+  AuthProvider({AuthService? authService, this.onSessionExpired})
+      : _authService = authService ?? AuthService() {
+    ApiClient.instance.onUnauthorized = _handleUnauthorized;
+  }
 
   final AuthService _authService;
+
+  /// Dipanggil saat sesi dianggap tidak valid (401) supaya kembali ke login.
+  final VoidCallback? onSessionExpired;
 
   AuthStatus _status = AuthStatus.unknown;
   User? _user;
@@ -53,10 +60,23 @@ class AuthProvider extends ChangeNotifier {
   }
 
   Future<void> logout() async {
-    await _authService.logout();
+    try {
+      await _authService.logout();
+    } catch (_) {
+      // Abaikan error dari server; sesi lokal tetap dibersihkan.
+    }
     _user = null;
     _status = AuthStatus.unauthenticated;
     notifyListeners();
+  }
+
+  /// Dipanggil otomatis oleh [ApiClient] saat API mengembalikan 401.
+  void _handleUnauthorized() {
+    if (_status != AuthStatus.authenticated) return;
+    _user = null;
+    _status = AuthStatus.unauthenticated;
+    notifyListeners();
+    onSessionExpired?.call();
   }
 
   bool can(String permission) => _user?.can(permission) ?? false;

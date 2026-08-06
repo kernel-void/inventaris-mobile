@@ -1,12 +1,15 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
+import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 import 'package:provider/provider.dart';
 
+import '../../core/theme/app_theme.dart';
+import '../../core/widgets/custom_snackbar.dart';
 import '../../models/item.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/item_provider.dart';
-import '../../theme/app_theme.dart';
 import '../../widgets/error_view.dart';
 import '../../widgets/icon_badge.dart';
 import '../../widgets/loading_widget.dart';
@@ -66,7 +69,7 @@ class _ItemsScreenState extends State<ItemsScreen> {
           ),
           TextButton(
             onPressed: () => Navigator.of(context).pop(true),
-            style: TextButton.styleFrom(foregroundColor: AppTheme.danger),
+            style: TextButton.styleFrom(foregroundColor: context.danger),
             child: const Text('Hapus'),
           ),
         ],
@@ -84,11 +87,10 @@ class _ItemsScreenState extends State<ItemsScreen> {
 
   void _showSnack(String message, {bool isError = false}) {
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        backgroundColor: isError ? AppTheme.danger : null,
-        content: Text(message),
-      ),
+    showAppSnackBar(
+      context,
+      message,
+      type: isError ? AppSnackType.error : AppSnackType.success,
     );
   }
 
@@ -116,56 +118,69 @@ class _ItemsScreenState extends State<ItemsScreen> {
             child: provider.loading && provider.items.isEmpty
                 ? const LoadingWidget(text: 'Memuat barang...')
                 : provider.error != null && provider.items.isEmpty
-                    ? ErrorView(
-                        message: provider.error!,
-                        onRetry: () => provider.loadItems(refresh: true),
-                      )
-                    : RefreshIndicator(
-                        onRefresh: () => provider.loadItems(refresh: true),
-                        child: provider.items.isEmpty
-                            ? _EmptyState(
-                                hasSearch: provider.error == null,
-                                onReset: () {
-                                  _debounce?.cancel();
-                                  _searchController.clear();
-                                  provider.setSearch('');
-                                },
-                              )
-                            : ListView.separated(
-                                padding: const EdgeInsets.fromLTRB(16, 8, 16, 96),
-                                itemCount:
-                                    provider.items.length + (provider.hasMore ? 1 : 0),
-                                separatorBuilder: (_, _) => const SizedBox(height: 8),
-                                itemBuilder: (context, index) {
-                                  if (index >= provider.items.length) {
-                                    provider.loadItems();
-                                    return const Padding(
-                                      padding: EdgeInsets.symmetric(vertical: 16),
-                                      child: Center(
-                                        child: CircularProgressIndicator(strokeWidth: 2.5),
-                                      ),
-                                    );
-                                  }
-                                  final item = provider.items[index];
-                                  return _ItemCard(
+                ? ErrorView(
+                    message: provider.error!,
+                    onRetry: () => provider.loadItems(refresh: true),
+                  )
+                : RefreshIndicator(
+                    onRefresh: () => provider.loadItems(refresh: true),
+                    child: provider.items.isEmpty
+                        ? _EmptyState(
+                            hasSearch: provider.error == null,
+                            onReset: () {
+                              _debounce?.cancel();
+                              _searchController.clear();
+                              provider.setSearch('');
+                            },
+                          )
+                        : ListView.separated(
+                            padding: const EdgeInsets.fromLTRB(16, 8, 16, 96),
+                            itemCount:
+                                provider.items.length +
+                                (provider.hasMore ? 1 : 0),
+                            separatorBuilder: (_, _) =>
+                                const SizedBox(height: 8),
+                            itemBuilder: (context, index) {
+                              if (index >= provider.items.length) {
+                                provider.loadItems();
+                                return const Padding(
+                                  padding: EdgeInsets.symmetric(vertical: 16),
+                                  child: Center(
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2.5,
+                                    ),
+                                  ),
+                                );
+                              }
+                              final item = provider.items[index];
+                              return _ItemCard(
                                     item: item,
                                     canEdit: canEdit,
                                     canDelete: canDelete,
-                                    onEdit: () => _openForm(context, item: item),
-                                    onView:
-                                        canView ? () => _openDetail(context, item) : null,
+                                    onEdit: () =>
+                                        _openForm(context, item: item),
+                                    onView: canView
+                                        ? () => _openDetail(context, item)
+                                        : null,
                                     onDelete: () => _confirmDelete(item),
+                                  )
+                                  .animate(delay: (index * 30).ms)
+                                  .fadeIn(duration: 300.ms)
+                                  .moveY(
+                                    begin: 8,
+                                    duration: 300.ms,
+                                    curve: Curves.easeOut,
                                   );
-                                },
-                              ),
-                      ),
+                            },
+                          ),
+                  ),
           ),
         ],
       ),
       floatingActionButton: canCreate
           ? FloatingActionButton.extended(
               onPressed: () => _openForm(context),
-              icon: const Icon(Icons.add),
+              icon: const Icon(PhosphorIcons.plus),
               label: const Text('Barang'),
             )
           : null,
@@ -173,9 +188,9 @@ class _ItemsScreenState extends State<ItemsScreen> {
   }
 
   Future<void> _openForm(BuildContext context, {Item? item}) async {
-    await Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => ItemFormScreen(item: item)),
-    );
+    await Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: (_) => ItemFormScreen(item: item)));
     if (context.mounted) {
       context.read<ItemProvider>().loadItems(refresh: true);
     }
@@ -218,8 +233,8 @@ class _ItemCard extends StatelessWidget {
           child: Row(
             children: [
               IconBadge(
-                icon: Icons.inventory_2_outlined,
-                color: lowStock ? AppTheme.warning : AppTheme.primary,
+                icon: PhosphorIcons.package,
+                color: lowStock ? context.warning : context.primary,
                 size: 44,
               ),
               const SizedBox(width: 12),
@@ -249,17 +264,19 @@ class _ItemCard extends StatelessWidget {
               ),
               const SizedBox(width: 8),
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 6,
+                ),
                 decoration: BoxDecoration(
-                  color: (lowStock ? AppTheme.warning : AppTheme.success)
+                  color: (lowStock ? context.warning : context.success)
                       .withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
                   '${item.stock} ${item.unit ?? ''}',
                   style: TextStyle(
-                    color: lowStock ? AppTheme.warning : AppTheme.success,
+                    color: lowStock ? context.warning : context.success,
                     fontWeight: FontWeight.w700,
                     fontSize: 12,
                   ),
@@ -275,10 +292,7 @@ class _ItemCard extends StatelessWidget {
                   },
                   itemBuilder: (context) => [
                     if (onEdit != null)
-                      const PopupMenuItem(
-                        value: 'edit',
-                        child: Text('Edit'),
-                      ),
+                      const PopupMenuItem(value: 'edit', child: Text('Edit')),
                     if (onDelete != null)
                       const PopupMenuItem(
                         value: 'delete',
@@ -290,8 +304,8 @@ class _ItemCard extends StatelessWidget {
                 IconButton(
                   visualDensity: VisualDensity.compact,
                   onPressed: onEdit,
-                  icon: const Icon(Icons.chevron_right, size: 20),
-                  color: AppTheme.textSecondary,
+                  icon: const Icon(PhosphorIcons.caretRight, size: 20),
+                  color: context.colors.onSurfaceVariant,
                 ),
             ],
           ),
@@ -312,8 +326,11 @@ class _EmptyState extends StatelessWidget {
     return ListView(
       children: [
         const SizedBox(height: 120),
-        Icon(Icons.inventory_2_outlined,
-            size: 64, color: AppTheme.textSecondary.withValues(alpha: 0.5)),
+        Icon(
+          PhosphorIcons.package,
+          size: 64,
+          color: context.colors.onSurfaceVariant.withValues(alpha: 0.5),
+        ),
         const SizedBox(height: 16),
         Center(
           child: Text(
@@ -337,7 +354,7 @@ class _EmptyState extends StatelessWidget {
             child: Center(
               child: TextButton.icon(
                 onPressed: onReset,
-                icon: const Icon(Icons.close, size: 18),
+                icon: const Icon(PhosphorIcons.x, size: 18),
                 label: const Text('Reset pencarian'),
               ),
             ),

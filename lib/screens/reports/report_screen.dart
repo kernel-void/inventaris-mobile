@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
+import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 
+import '../../core/theme/app_theme.dart';
 import '../../models/report.dart';
 import '../../services/report_service.dart';
-import '../../theme/app_theme.dart';
 import '../../widgets/error_view.dart';
 import '../../widgets/loading_widget.dart';
 
@@ -15,7 +17,11 @@ class ReportScreen extends StatefulWidget {
 
 class _ReportScreenState extends State<ReportScreen> {
   static const _types = ['inventory', 'incoming', 'outgoing'];
-  static const _typeLabels = {'inventory': 'Inventaris', 'incoming': 'Masuk', 'outgoing': 'Keluar'};
+  static const _typeLabels = {
+    'inventory': 'Inventaris',
+    'incoming': 'Masuk',
+    'outgoing': 'Keluar',
+  };
   static const _periods = ['daily', 'monthly', 'yearly', 'range'];
   static const _periodLabels = {
     'daily': 'Harian',
@@ -24,8 +30,18 @@ class _ReportScreenState extends State<ReportScreen> {
     'range': 'Rentang Tanggal',
   };
   static const _months = [
-    'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
-    'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember',
+    'Januari',
+    'Februari',
+    'Maret',
+    'April',
+    'Mei',
+    'Juni',
+    'Juli',
+    'Agustus',
+    'September',
+    'Oktober',
+    'November',
+    'Desember',
   ];
 
   final _service = ReportService();
@@ -144,8 +160,8 @@ class _ReportScreenState extends State<ReportScreen> {
             child: _loading && _data == null
                 ? const LoadingWidget(text: 'Memuat laporan...')
                 : _error != null && _data == null
-                    ? ErrorView(message: _error!, onRetry: _load)
-                    : _buildResult(context),
+                ? ErrorView(message: _error!, onRetry: _load)
+                : _buildResult(context),
           ),
         ],
       ),
@@ -156,9 +172,13 @@ class _ReportScreenState extends State<ReportScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppTheme.border),
+        border: Border.all(
+          color:
+              Theme.of(context).dividerTheme.color ??
+              Theme.of(context).colorScheme.outlineVariant,
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -169,7 +189,10 @@ class _ReportScreenState extends State<ReportScreen> {
             width: double.infinity,
             child: SegmentedButton<String>(
               segments: _types
-                  .map((t) => ButtonSegment(value: t, label: Text(_typeLabels[t]!)))
+                  .map(
+                    (t) =>
+                        ButtonSegment(value: t, label: Text(_typeLabels[t]!)),
+                  )
                   .toList(),
               selected: {_type},
               onSelectionChanged: (s) => setState(() => _type = s.first),
@@ -182,10 +205,18 @@ class _ReportScreenState extends State<ReportScreen> {
           DropdownButtonFormField<String>(
             initialValue: _period,
             decoration: const InputDecoration(
-              contentPadding: EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              contentPadding: EdgeInsets.symmetric(
+                horizontal: 14,
+                vertical: 12,
+              ),
             ),
             items: _periods
-                .map((p) => DropdownMenuItem(value: p, child: Text(_periodLabels[p]!)))
+                .map(
+                  (p) => DropdownMenuItem(
+                    value: p,
+                    child: Text(_periodLabels[p]!),
+                  ),
+                )
                 .toList(),
             onChanged: (v) => setState(() => _period = v ?? 'daily'),
           ),
@@ -194,9 +225,9 @@ class _ReportScreenState extends State<ReportScreen> {
           const SizedBox(height: 16),
           SizedBox(
             width: double.infinity,
-            child: ElevatedButton.icon(
+            child: FilledButton.icon(
               onPressed: _loading ? null : _load,
-              icon: const Icon(Icons.refresh, size: 18),
+              icon: const Icon(PhosphorIcons.arrowsClockwise, size: 18),
               label: const Text('Tampilkan Laporan'),
             ),
           ),
@@ -209,10 +240,7 @@ class _ReportScreenState extends State<ReportScreen> {
     final (label, onTap) = switch (_period) {
       'monthly' => (_monthLabel, _pickMonth),
       'yearly' => ('$_year', _pickYear),
-      'range' => (
-          '${_formatDate(_from)} s/d ${_formatDate(_to)}',
-          _pickRange
-        ),
+      'range' => ('${_formatDate(_from)} s/d ${_formatDate(_to)}', _pickRange),
       _ => (_formatDate(_date), _pickDate),
     };
 
@@ -221,7 +249,7 @@ class _ReportScreenState extends State<ReportScreen> {
       borderRadius: BorderRadius.circular(14),
       child: InputDecorator(
         decoration: const InputDecoration(
-          prefixIcon: Icon(Icons.calendar_today_outlined, size: 18),
+          prefixIcon: Icon(PhosphorIcons.calendarBlank, size: 18),
           contentPadding: EdgeInsets.symmetric(horizontal: 14, vertical: 12),
         ),
         child: Text(label, style: Theme.of(context).textTheme.titleSmall),
@@ -254,19 +282,31 @@ class _ReportScreenState extends State<ReportScreen> {
             Container(
               padding: const EdgeInsets.symmetric(vertical: 40),
               decoration: BoxDecoration(
-                color: AppTheme.surfaceMuted,
+                color: Theme.of(context).colorScheme.surfaceContainerHigh,
                 borderRadius: BorderRadius.circular(16),
               ),
-              child: const Column(
+              child: Column(
                 children: [
-                  Icon(Icons.inbox_outlined, size: 48, color: AppTheme.textSecondary),
-                  SizedBox(height: 8),
-                  Text('Tidak ada data pada periode ini'),
+                  Icon(
+                    PhosphorIcons.tray,
+                    size: 48,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Tidak ada data pada periode ini',
+                    style: Theme.of(context).textTheme.bodyMedium,
+                  ),
                 ],
               ),
             )
           else
-            ...data.rows.map((row) => _ReportRowCard(row: row, isInventory: data.isInventory)),
+            ...data.rows.asMap().entries.map(
+              (e) => _ReportRowCard(row: e.value, isInventory: data.isInventory)
+                  .animate(delay: (e.key * 30).ms)
+                  .fadeIn(duration: 300.ms)
+                  .moveY(begin: 8, duration: 300.ms, curve: Curves.easeOut),
+            ),
         ],
       ),
     );
@@ -284,41 +324,41 @@ class _ReportScreenState extends State<ReportScreen> {
           ];
 
     return Row(
-      children: entries
-          .map(
-            (e) => Expanded(
-              child: Container(
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [AppTheme.primary, Color(0xFF7C3AED)],
+      children: [
+        for (var i = 0; i < entries.length; i++) ...[
+          if (i > 0) const SizedBox(width: 12),
+          Expanded(
+            child: Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: context.primary,
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    entries[i].$1,
+                    style: TextStyle(
+                      color: context.colors.onPrimary.withValues(alpha: 0.85),
+                      fontSize: 12,
+                    ),
                   ),
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      e.$1,
-                      style: const TextStyle(color: Colors.white70, fontSize: 12),
+                  const SizedBox(height: 4),
+                  Text(
+                    entries[i].$2,
+                    style: TextStyle(
+                      color: context.colors.onPrimary,
+                      fontSize: 22,
+                      fontWeight: FontWeight.w800,
                     ),
-                    const SizedBox(height: 4),
-                    Text(
-                      e.$2,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 22,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
-          )
-          .toList(),
+          ),
+        ],
+      ],
     );
   }
 }
@@ -348,13 +388,15 @@ class _ReportRowCard extends StatelessWidget {
               width: 40,
               height: 40,
               decoration: BoxDecoration(
-                color: AppTheme.primary.withValues(alpha: 0.10),
+                color: context.primary.withValues(alpha: 0.10),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Icon(
-                isInventory ? Icons.inventory_2_outlined : Icons.swap_vert,
+                isInventory
+                    ? PhosphorIcons.package
+                    : PhosphorIcons.arrowsLeftRight,
                 size: 20,
-                color: AppTheme.primary,
+                color: context.primary,
               ),
             ),
             const SizedBox(width: 12),
@@ -398,13 +440,13 @@ class _ReportRowCard extends StatelessWidget {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
               decoration: BoxDecoration(
-                color: AppTheme.success.withValues(alpha: 0.12),
+                color: context.success.withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Text(
                 badge,
-                style: const TextStyle(
-                  color: AppTheme.success,
+                style: TextStyle(
+                  color: context.success,
                   fontWeight: FontWeight.w700,
                   fontSize: 12,
                 ),

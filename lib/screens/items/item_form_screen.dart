@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
+import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 import 'package:provider/provider.dart';
 
+import '../../core/theme/app_theme.dart';
 import '../../models/item.dart';
 import '../../providers/item_provider.dart';
-import '../../theme/app_theme.dart';
 
 const _conditions = ['Baik', 'Rusak Ringan', 'Rusak Berat', 'Hilang'];
 
@@ -42,8 +44,12 @@ class _ItemFormScreenState extends State<ItemFormScreen> {
     _brandController = TextEditingController(text: item?.brand ?? '');
     _unitController = TextEditingController(text: item?.unit ?? '');
     _yearController = TextEditingController(text: item?.acquisitionYear ?? '');
-    _stockController = TextEditingController(text: item?.stock.toString() ?? '0');
-    _descriptionController = TextEditingController(text: item?.description ?? '');
+    _stockController = TextEditingController(
+      text: item?.stock.toString() ?? '0',
+    );
+    _descriptionController = TextEditingController(
+      text: item?.description ?? '',
+    );
     _categoryId = item?.categoryId;
     _roomId = item?.roomId;
     _condition = item?.condition ?? 'Baik';
@@ -61,22 +67,22 @@ class _ItemFormScreenState extends State<ItemFormScreen> {
   }
 
   Map<String, dynamic> _buildPayload() => {
-        'name': _nameController.text.trim(),
-        'category_id': _categoryId,
-        'room_id': _roomId,
-        'brand': _brandController.text.trim().isEmpty
-            ? null
-            : _brandController.text.trim(),
-        'unit': _unitController.text.trim(),
-        'acquisition_year': _yearController.text.trim().isEmpty
-            ? null
-            : _yearController.text.trim(),
-        'condition': _condition,
-        'stock': int.tryParse(_stockController.text) ?? 0,
-        'description': _descriptionController.text.trim().isEmpty
-            ? null
-            : _descriptionController.text.trim(),
-      };
+    'name': _nameController.text.trim(),
+    'category_id': _categoryId,
+    'room_id': _roomId,
+    'brand': _brandController.text.trim().isEmpty
+        ? null
+        : _brandController.text.trim(),
+    'unit': _unitController.text.trim(),
+    'acquisition_year': _yearController.text.trim().isEmpty
+        ? null
+        : _yearController.text.trim(),
+    'condition': _condition,
+    'stock': int.tryParse(_stockController.text) ?? 0,
+    'description': _descriptionController.text.trim().isEmpty
+        ? null
+        : _descriptionController.text.trim(),
+  };
 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
@@ -107,10 +113,10 @@ class _ItemFormScreenState extends State<ItemFormScreen> {
       padding: const EdgeInsets.only(top: 20, bottom: 4),
       child: Text(
         title,
-        style: Theme.of(context)
-            .textTheme
-            .bodySmall
-            ?.copyWith(color: AppTheme.textSecondary, fontWeight: FontWeight.w700),
+        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+          color: Theme.of(context).colorScheme.onSurfaceVariant,
+          fontWeight: FontWeight.w700,
+        ),
       ),
     );
   }
@@ -121,151 +127,189 @@ class _ItemFormScreenState extends State<ItemFormScreen> {
 
     return Scaffold(
       appBar: AppBar(title: Text(_isEdit ? 'Edit Barang' : 'Tambah Barang')),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              if (_serverError != null) ...[
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: AppTheme.danger.withValues(alpha: 0.08),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Row(
+      body:
+          SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      const Icon(Icons.error_outline,
-                          size: 20, color: AppTheme.danger),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(_serverError!,
-                            style: const TextStyle(color: AppTheme.danger)),
+                      if (_serverError != null) ...[
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: context.danger.withValues(alpha: 0.08),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(
+                                PhosphorIcons.warningCircle,
+                                size: 20,
+                                color: context.danger,
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  _serverError!,
+                                  style: TextStyle(color: context.danger),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                      ],
+                      _buildSection('INFORMASI DASAR'),
+                      TextFormField(
+                        controller: _nameController,
+                        decoration: const InputDecoration(
+                          labelText: 'Nama Barang',
+                        ),
+                        validator: (v) => v == null || v.trim().isEmpty
+                            ? 'Nama wajib diisi'
+                            : null,
+                      ),
+                      const SizedBox(height: 12),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: DropdownButtonFormField<int>(
+                              isExpanded: true,
+                              initialValue: _categoryId,
+                              decoration: const InputDecoration(
+                                labelText: 'Kategori',
+                              ),
+                              items: provider.categories
+                                  .map(
+                                    (c) => DropdownMenuItem(
+                                      value: c.id,
+                                      child: Text(c.name),
+                                    ),
+                                  )
+                                  .toList(),
+                              onChanged: (v) => setState(() => _categoryId = v),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: DropdownButtonFormField<int>(
+                              isExpanded: true,
+                              initialValue: _roomId,
+                              decoration: const InputDecoration(
+                                labelText: 'Ruangan',
+                              ),
+                              items: provider.rooms
+                                  .map(
+                                    (r) => DropdownMenuItem(
+                                      value: r.id,
+                                      child: Text(r.name),
+                                    ),
+                                  )
+                                  .toList(),
+                              onChanged: (v) => setState(() => _roomId = v),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      DropdownButtonFormField<String>(
+                        isExpanded: true,
+                        initialValue: _condition,
+                        decoration: const InputDecoration(labelText: 'Kondisi'),
+                        items: _conditions
+                            .map(
+                              (c) => DropdownMenuItem(value: c, child: Text(c)),
+                            )
+                            .toList(),
+                        onChanged: (v) =>
+                            setState(() => _condition = v ?? 'Baik'),
+                      ),
+                      _buildSection('DETAIL'),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: TextFormField(
+                              controller: _brandController,
+                              decoration: const InputDecoration(
+                                labelText: 'Merk',
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: TextFormField(
+                              controller: _unitController,
+                              decoration: const InputDecoration(
+                                labelText: 'Satuan',
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: TextFormField(
+                              controller: _yearController,
+                              keyboardType: TextInputType.number,
+                              decoration: const InputDecoration(
+                                labelText: 'Tahun',
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: TextFormField(
+                              controller: _stockController,
+                              keyboardType: TextInputType.number,
+                              decoration: const InputDecoration(
+                                labelText: 'Stok',
+                              ),
+                              validator: (v) {
+                                final n = int.tryParse(v ?? '');
+                                if (n == null || n < 0) {
+                                  return 'Stok tidak valid';
+                                }
+                                return null;
+                              },
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      TextFormField(
+                        controller: _descriptionController,
+                        maxLines: 3,
+                        decoration: const InputDecoration(
+                          labelText: 'Deskripsi',
+                          alignLabelWithHint: true,
+                        ),
+                      ),
+                      const SizedBox(height: 28),
+                      FilledButton(
+                        onPressed: _submitting ? null : _submit,
+                        child: _submitting
+                            ? const SizedBox(
+                                width: 22,
+                                height: 22,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2.5,
+                                ),
+                              )
+                            : Text(
+                                _isEdit ? 'Simpan Perubahan' : 'Simpan Barang',
+                              ),
                       ),
                     ],
                   ),
                 ),
-                const SizedBox(height: 16),
-              ],
-              _buildSection('INFORMASI DASAR'),
-              TextFormField(
-                controller: _nameController,
-                decoration: const InputDecoration(labelText: 'Nama Barang'),
-                validator: (v) =>
-                    v == null || v.trim().isEmpty ? 'Nama wajib diisi' : null,
-              ),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  Expanded(
-                    child: DropdownButtonFormField<int>(
-                      isExpanded: true,
-                      initialValue: _categoryId,
-                      decoration: const InputDecoration(labelText: 'Kategori'),
-                      items: provider.categories
-                          .map((c) =>
-                              DropdownMenuItem(value: c.id, child: Text(c.name)))
-                          .toList(),
-                      onChanged: (v) => setState(() => _categoryId = v),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: DropdownButtonFormField<int>(
-                      isExpanded: true,
-                      initialValue: _roomId,
-                      decoration: const InputDecoration(labelText: 'Ruangan'),
-                      items: provider.rooms
-                          .map((r) =>
-                              DropdownMenuItem(value: r.id, child: Text(r.name)))
-                          .toList(),
-                      onChanged: (v) => setState(() => _roomId = v),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              DropdownButtonFormField<String>(
-                isExpanded: true,
-                initialValue: _condition,
-                decoration: const InputDecoration(labelText: 'Kondisi'),
-                items: _conditions
-                    .map((c) => DropdownMenuItem(value: c, child: Text(c)))
-                    .toList(),
-                onChanged: (v) => setState(() => _condition = v ?? 'Baik'),
-              ),
-              _buildSection('DETAIL'),
-              Row(
-                children: [
-                  Expanded(
-                    child: TextFormField(
-                      controller: _brandController,
-                      decoration: const InputDecoration(labelText: 'Merk'),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: TextFormField(
-                      controller: _unitController,
-                      decoration: const InputDecoration(labelText: 'Satuan'),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  Expanded(
-                    child: TextFormField(
-                      controller: _yearController,
-                      keyboardType: TextInputType.number,
-                      decoration: const InputDecoration(labelText: 'Tahun'),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: TextFormField(
-                      controller: _stockController,
-                      keyboardType: TextInputType.number,
-                      decoration: const InputDecoration(labelText: 'Stok'),
-                      validator: (v) {
-                        final n = int.tryParse(v ?? '');
-                        if (n == null || n < 0) return 'Stok tidak valid';
-                        return null;
-                      },
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              TextFormField(
-                controller: _descriptionController,
-                maxLines: 3,
-                decoration: const InputDecoration(
-                  labelText: 'Deskripsi',
-                  alignLabelWithHint: true,
-                ),
-              ),
-              const SizedBox(height: 28),
-              ElevatedButton(
-                onPressed: _submitting ? null : _submit,
-                child: _submitting
-                    ? const SizedBox(
-                        width: 22,
-                        height: 22,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2.5,
-                          color: Colors.white,
-                        ),
-                      )
-                    : Text(_isEdit ? 'Simpan Perubahan' : 'Simpan Barang'),
-              ),
-            ],
-          ),
-        ),
-      ),
+              )
+              .animate()
+              .fadeIn(duration: 350.ms)
+              .moveY(begin: 8, duration: 350.ms, curve: Curves.easeOut),
     );
   }
 }

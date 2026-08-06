@@ -32,6 +32,14 @@ class ApiClient {
 
   late final Dio _dio;
 
+  /// Dipanggil saat API mengembalikan 401 (token tidak valid/kedaluwarsa).
+  /// Dipakai untuk logout otomatis dan kembali ke halaman login.
+  void Function()? onUnauthorized;
+
+  /// Dipanggil saat API mengembalikan 503 (mode pemeliharaan server aktif).
+  /// Dipakai untuk menampilkan layar "Sistem Sedang Maintenance".
+  void Function()? onMaintenance;
+
   Dio get dio => _dio;
 
   /// Eksekusi request dan konversi error Dio menjadi [ApiException].
@@ -58,6 +66,17 @@ class ApiClient {
     final statusCode = response?.statusCode;
     final data = response?.data;
 
+    if (statusCode == 401) {
+      // Token tidak valid/kedaluwarsa: bersihkan sesi & minta login ulang.
+      TokenStorage.clear();
+      onUnauthorized?.call();
+    }
+
+    if (statusCode == 503) {
+      // Server dalam mode pemeliharaan: tampilkan layar maintenance.
+      onMaintenance?.call();
+    }
+
     if (data is Map<String, dynamic>) {
       final message = data['message'] as String? ?? 'Terjadi kesalahan.';
       final errors = <String, List<String>>{};
@@ -77,7 +96,9 @@ class ApiClient {
       return ApiException('Koneksi ke server timeout. Coba lagi nanti.');
     }
     if (e.type == DioExceptionType.connectionError) {
-      return ApiException('Tidak dapat terhubung ke server. Pastikan server aktif.');
+      return ApiException(
+        'Tidak dapat terhubung ke server. Pastikan server aktif.',
+      );
     }
 
     return ApiException(

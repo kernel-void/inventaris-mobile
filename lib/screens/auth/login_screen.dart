@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
+import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 import 'package:provider/provider.dart';
 
+import '../../core/widgets/custom_snackbar.dart';
 import '../../providers/auth_provider.dart';
-import '../../theme/app_theme.dart';
 import '../home/dashboard_screen.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -42,8 +44,10 @@ class _LoginScreenState extends State<LoginScreen> {
         (route) => false,
       );
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(auth.error ?? 'Gagal login')),
+      showAppSnackBar(
+        context,
+        auth.error ?? 'Gagal login. Periksa email dan password Anda.',
+        type: AppSnackType.error,
       );
     }
   }
@@ -51,6 +55,7 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     final auth = context.watch<AuthProvider>();
+    final theme = Theme.of(context);
 
     return Scaffold(
       body: SafeArea(
@@ -69,55 +74,71 @@ class _LoginScreenState extends State<LoginScreen> {
                         width: 72,
                         height: 72,
                         decoration: BoxDecoration(
-                          color: AppTheme.primary.withValues(alpha: 0.10),
+                          color: theme.colorScheme.primary.withValues(alpha: 0.10),
                           borderRadius: BorderRadius.circular(22),
                         ),
-                        child: const Icon(
-                          Icons.inventory_2_outlined,
+                        child: Icon(
+                          PhosphorIcons.package,
                           size: 36,
-                          color: AppTheme.primary,
+                          color: theme.colorScheme.primary,
                         ),
                       ),
-                    ),
+                    )
+                        .animate()
+                        .fadeIn(duration: 400.ms)
+                        .scale(
+                          begin: const Offset(0.9, 0.9),
+                          duration: 400.ms,
+                          curve: Curves.easeOutBack,
+                        ),
                     const SizedBox(height: 24),
                     Text(
                       'Selamat Datang',
                       textAlign: TextAlign.center,
-                      style: Theme.of(context).textTheme.headlineMedium,
-                    ),
+                      style: theme.textTheme.headlineMedium,
+                    )
+                        .animate(delay: 100.ms)
+                        .fadeIn(duration: 400.ms)
+                        .moveY(begin: 8, duration: 400.ms, curve: Curves.easeOut),
                     const SizedBox(height: 8),
                     Text(
                       'Masuk untuk mengelola inventaris sekolah',
                       textAlign: TextAlign.center,
-                      style: Theme.of(context).textTheme.bodyMedium,
-                    ),
+                      style: theme.textTheme.bodyMedium,
+                    )
+                        .animate(delay: 180.ms)
+                        .fadeIn(duration: 400.ms)
+                        .moveY(begin: 8, duration: 400.ms, curve: Curves.easeOut),
                     const SizedBox(height: 36),
                     TextFormField(
                       controller: _emailController,
                       keyboardType: TextInputType.emailAddress,
                       autocorrect: false,
-                      decoration: const InputDecoration(
+                      decoration: InputDecoration(
                         labelText: 'Email',
-                        prefixIcon: Icon(Icons.mail_outline),
+                        prefixIcon: Icon(PhosphorIcons.envelope),
                       ),
                       validator: (v) {
                         if (v == null || v.trim().isEmpty) return 'Email wajib diisi';
                         if (!v.trim().contains('@')) return 'Format email tidak valid';
                         return null;
                       },
-                    ),
+                    )
+                        .animate(delay: 260.ms)
+                        .fadeIn(duration: 400.ms)
+                        .moveY(begin: 12, duration: 400.ms, curve: Curves.easeOut),
                     const SizedBox(height: 16),
                     TextFormField(
                       controller: _passwordController,
                       obscureText: _obscure,
                       decoration: InputDecoration(
                         labelText: 'Password',
-                        prefixIcon: const Icon(Icons.lock_outline),
+                        prefixIcon: Icon(PhosphorIcons.lockSimple),
                         suffixIcon: IconButton(
                           icon: Icon(
                             _obscure
-                                ? Icons.visibility_outlined
-                                : Icons.visibility_off_outlined,
+                                ? PhosphorIcons.eye
+                                : PhosphorIcons.eyeSlash,
                           ),
                           onPressed: () => setState(() => _obscure = !_obscure),
                         ),
@@ -127,21 +148,24 @@ class _LoginScreenState extends State<LoginScreen> {
                         return null;
                       },
                       onFieldSubmitted: (_) => _submit(),
-                    ),
+                    )
+                        .animate(delay: 340.ms)
+                        .fadeIn(duration: 400.ms)
+                        .moveY(begin: 12, duration: 400.ms, curve: Curves.easeOut),
                     const SizedBox(height: 28),
-                    ElevatedButton(
+                    FilledButton(
                       onPressed: auth.loading ? null : _submit,
                       child: auth.loading
                           ? const SizedBox(
                               width: 22,
                               height: 22,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2.5,
-                                color: Colors.white,
-                              ),
+                              child: CircularProgressIndicator(strokeWidth: 2.5),
                             )
                           : const Text('Masuk'),
-                    ),
+                    )
+                        .animate(delay: 420.ms)
+                        .fadeIn(duration: 400.ms)
+                        .moveY(begin: 12, duration: 400.ms, curve: Curves.easeOut),
                   ],
                 ),
               ),

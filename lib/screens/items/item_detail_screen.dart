@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
+import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 
+import '../../core/theme/app_theme.dart';
 import '../../models/item.dart';
 import '../../services/item_service.dart';
-import '../../theme/app_theme.dart';
 import '../../widgets/error_view.dart';
 import '../../widgets/loading_widget.dart';
 
@@ -57,85 +59,83 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
 
   Widget _buildDetail(BuildContext context) {
     final item = _item!;
+    final theme = Theme.of(context);
 
     return ListView(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
+      padding: const EdgeInsets.fromLTRB(
+        AppTheme.pagePadding,
+        8,
+        AppTheme.pagePadding,
+        32,
+      ),
       children: [
         Container(
-          padding: const EdgeInsets.all(20),
+          padding: const EdgeInsets.all(AppTheme.cardPadding),
           decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [AppTheme.primary, Color(0xFF7C3AED)],
+            color: context.colors.surface,
+            borderRadius: BorderRadius.circular(AppTheme.radiusCard),
+            border: Border.all(
+              color: theme.dividerTheme.color ?? Colors.transparent,
             ),
-            borderRadius: BorderRadius.circular(24),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
                 item.code,
-                style: const TextStyle(
-                  color: Colors.white70,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
+                style: theme.textTheme.bodySmall?.copyWith(
                   letterSpacing: 1.2,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
               const SizedBox(height: 6),
               Text(
                 item.name,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 22,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: -0.3,
-                ),
+                style: theme.textTheme.headlineMedium,
               ),
               const SizedBox(height: 14),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.16),
+                  color: context.primary.withValues(alpha: 0.10),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
                   'Stok ${item.stock} ${item.unit ?? ''}',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w800,
-                    fontSize: 16,
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    color: context.primary,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
               ),
             ],
           ),
         ),
-        const SizedBox(height: 16),
-        _InfoRow(icon: Icons.sell_outlined, label: 'Kategori', value: item.category?.name ?? '-'),
-        _InfoRow(icon: Icons.meeting_room_outlined, label: 'Ruangan', value: item.room?.name ?? '-'),
-        _InfoRow(icon: Icons.branding_watermark_outlined, label: 'Merk', value: item.brand ?? '-'),
-        _InfoRow(icon: Icons.straighten, label: 'Satuan', value: item.unit ?? '-'),
+        const SizedBox(height: AppTheme.sectionGap),
+        _InfoRow(icon: PhosphorIcons.tag, label: 'Kategori', value: item.category?.name ?? '-'),
+        _InfoRow(icon: PhosphorIcons.building, label: 'Ruangan', value: item.room?.name ?? '-'),
+        _InfoRow(icon: PhosphorIcons.medal, label: 'Merk', value: item.brand ?? '-'),
+        _InfoRow(icon: PhosphorIcons.ruler, label: 'Satuan', value: item.unit ?? '-'),
         _InfoRow(
-          icon: Icons.calendar_today_outlined,
+          icon: PhosphorIcons.calendarBlank,
           label: 'Tahun Perolehan',
           value: item.acquisitionYear ?? '-',
         ),
         _InfoRow(
-          icon: Icons.health_and_safety_outlined,
+          icon: PhosphorIcons.pulse,
           label: 'Kondisi',
           value: item.condition ?? '-',
         ),
         if (item.description != null && item.description!.isNotEmpty)
           _InfoRow(
-            icon: Icons.notes_outlined,
+            icon: PhosphorIcons.notebook,
             label: 'Keterangan',
             value: item.description!,
             multiline: true,
           ),
       ],
-    );
+    ).animate().fadeIn(duration: 350.ms);
   }
 }
 
@@ -154,44 +154,41 @@ class _InfoRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return Card(
       margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppTheme.border),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: 36,
-            height: 36,
-            decoration: BoxDecoration(
-              color: AppTheme.primary.withValues(alpha: 0.10),
-              borderRadius: BorderRadius.circular(10),
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                color: context.primary.withValues(alpha: 0.10),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(icon, size: 18, color: context.primary),
             ),
-            child: Icon(icon, size: 18, color: AppTheme.primary),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(label, style: Theme.of(context).textTheme.bodySmall),
-                const SizedBox(height: 2),
-                Text(
-                  value,
-                  style: Theme.of(context)
-                      .textTheme
-                      .titleSmall
-                      ?.copyWith(fontWeight: FontWeight.w700),
-                ),
-              ],
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(label, style: Theme.of(context).textTheme.bodySmall),
+                  const SizedBox(height: 2),
+                  Text(
+                    value,
+                    style: Theme.of(context)
+                        .textTheme
+                        .titleSmall
+                        ?.copyWith(fontWeight: FontWeight.w600),
+                  ),
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

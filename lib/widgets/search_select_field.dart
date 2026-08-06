@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
-
-import '../theme/app_theme.dart';
+import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 
 /// Field pemilih dengan pencarian: ketuk untuk membuka bottom sheet
 /// berisi kolom pencarian + daftar hasil yang difilter.
@@ -50,8 +49,8 @@ class SearchSelectField<T> extends StatelessWidget {
       child: InputDecorator(
         decoration: InputDecoration(
           labelText: label,
-          prefixIcon: const Icon(Icons.search),
-          suffixIcon: const Icon(Icons.arrow_drop_down),
+          prefixIcon: const Icon(PhosphorIcons.magnifyingGlass),
+          suffixIcon: const Icon(PhosphorIcons.caretDown),
         ),
         child: Text(
           display ?? hint,
@@ -59,7 +58,7 @@ class SearchSelectField<T> extends StatelessWidget {
           overflow: TextOverflow.ellipsis,
           style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                 color: display != null
-                    ? AppTheme.textPrimary
+                    ? Theme.of(context).colorScheme.onSurface
                     : Theme.of(context).colorScheme.onSurfaceVariant,
               ),
         ),
@@ -111,9 +110,9 @@ class _SearchSheetState<T> extends State<_SearchSheet<T>> {
       padding: EdgeInsets.only(bottom: bottom),
       child: Container(
         height: MediaQuery.of(context).size.height * 0.72,
-        decoration: const BoxDecoration(
-          color: AppTheme.surface,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surface,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
         ),
         child: Column(
           children: [
@@ -130,7 +129,7 @@ class _SearchSheetState<T> extends State<_SearchSheet<T>> {
                   IconButton(
                     tooltip: 'Tutup',
                     onPressed: () => Navigator.of(context).pop(),
-                    icon: const Icon(Icons.close),
+                    icon: const Icon(PhosphorIcons.x),
                   ),
                 ],
               ),
@@ -143,7 +142,7 @@ class _SearchSheetState<T> extends State<_SearchSheet<T>> {
                 onChanged: (v) => setState(() => _query = v),
                 decoration: InputDecoration(
                   hintText: 'Cari ${widget.title.toLowerCase()}...',
-                  prefixIcon: const Icon(Icons.search),
+                  prefixIcon: const Icon(PhosphorIcons.magnifyingGlass),
                 ),
               ),
             ),

@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 
+import '../core/theme/app_theme.dart';
 import '../models/item.dart';
 import '../models/transaction_filter.dart';
-import '../theme/app_theme.dart';
 import 'search_select_field.dart';
 
 class TransactionFilterBar extends StatefulWidget {
@@ -73,7 +74,9 @@ class _TransactionFilterBarState extends State<TransactionFilterBar> {
   void _applySearch(String value) {
     final text = value.trim();
     _pendingSearch = text;
-    widget.onChanged(widget.filter.copyWith(search: text.isEmpty ? null : text));
+    widget.onChanged(
+      widget.filter.copyWith(search: text.isEmpty ? null : text),
+    );
   }
 
   Future<void> _openSheet() async {
@@ -83,10 +86,7 @@ class _TransactionFilterBarState extends State<TransactionFilterBar> {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => _FilterSheet(
-        filter: widget.filter,
-        items: _items,
-      ),
+      builder: (context) => _FilterSheet(filter: widget.filter, items: _items),
     );
     if (result != null) widget.onChanged(result);
   }
@@ -100,18 +100,27 @@ class _TransactionFilterBarState extends State<TransactionFilterBar> {
     final chips = <Widget>[];
 
     if (filter.from != null || filter.to != null) {
-      final from = filter.from != null ? _dateFormat.format(DateTime.parse(filter.from!)) : '...';
-      final to = filter.to != null ? _dateFormat.format(DateTime.parse(filter.to!)) : '...';
-      chips.add(_FilterChip(
-        label: '$from – $to',
-        onDelete: () => widget.onChanged(filter.copyWith(from: null, to: null)),
-      ));
+      final from = filter.from != null
+          ? _dateFormat.format(DateTime.parse(filter.from!))
+          : '...';
+      final to = filter.to != null
+          ? _dateFormat.format(DateTime.parse(filter.to!))
+          : '...';
+      chips.add(
+        _FilterChip(
+          label: '$from – $to',
+          onDelete: () =>
+              widget.onChanged(filter.copyWith(from: null, to: null)),
+        ),
+      );
     }
     if (selectedItem != null) {
-      chips.add(_FilterChip(
-        label: selectedItem.name,
-        onDelete: () => widget.onChanged(filter.copyWith(itemId: null)),
-      ));
+      chips.add(
+        _FilterChip(
+          label: selectedItem.name,
+          onDelete: () => widget.onChanged(filter.copyWith(itemId: null)),
+        ),
+      );
     }
 
     return Padding(
@@ -130,11 +139,14 @@ class _TransactionFilterBarState extends State<TransactionFilterBar> {
                   decoration: InputDecoration(
                     hintText: widget.hint,
                     isDense: true,
-                    prefixIcon: const Icon(Icons.search, size: 20),
+                    prefixIcon: const Icon(
+                      PhosphorIcons.magnifyingGlass,
+                      size: 20,
+                    ),
                     suffixIcon: _pendingSearch.isNotEmpty
                         ? IconButton(
                             tooltip: 'Hapus',
-                            icon: const Icon(Icons.close, size: 18),
+                            icon: const Icon(PhosphorIcons.x, size: 18),
                             onPressed: () {
                               _searchController.clear();
                               setState(() => _pendingSearch = '');
@@ -146,10 +158,7 @@ class _TransactionFilterBarState extends State<TransactionFilterBar> {
                 ),
               ),
               const SizedBox(width: 8),
-              _FilterButton(
-                activeCount: filter.activeCount,
-                onTap: _openSheet,
-              ),
+              _FilterButton(activeCount: filter.activeCount, onTap: _openSheet),
             ],
           ),
           if (chips.isNotEmpty)
@@ -177,7 +186,7 @@ class _FilterButton extends StatelessWidget {
         IconButton.filledTonal(
           tooltip: 'Filter',
           onPressed: onTap,
-          icon: const Icon(Icons.tune, size: 20),
+          icon: const Icon(PhosphorIcons.sliders, size: 20),
         ),
         if (activeCount > 0)
           Positioned(
@@ -186,13 +195,13 @@ class _FilterButton extends StatelessWidget {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
               decoration: BoxDecoration(
-                color: AppTheme.primary,
+                color: context.primary,
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Text(
                 '$activeCount',
-                style: const TextStyle(
-                  color: Colors.white,
+                style: TextStyle(
+                  color: context.colors.onPrimary,
                   fontSize: 10,
                   fontWeight: FontWeight.w700,
                 ),
@@ -215,7 +224,7 @@ class _FilterChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.only(left: 12, right: 4),
       decoration: BoxDecoration(
-        color: AppTheme.primary.withValues(alpha: 0.08),
+        color: context.primary.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(10),
       ),
       child: Row(
@@ -223,8 +232,8 @@ class _FilterChip extends StatelessWidget {
         children: [
           Text(
             label,
-            style: const TextStyle(
-              color: AppTheme.primary,
+            style: TextStyle(
+              color: context.primary,
               fontSize: 12,
               fontWeight: FontWeight.w600,
             ),
@@ -232,9 +241,9 @@ class _FilterChip extends StatelessWidget {
           InkWell(
             onTap: onDelete,
             borderRadius: BorderRadius.circular(8),
-            child: const Padding(
-              padding: EdgeInsets.all(4),
-              child: Icon(Icons.close, size: 14, color: AppTheme.primary),
+            child: Padding(
+              padding: const EdgeInsets.all(4),
+              child: Icon(PhosphorIcons.x, size: 14, color: context.primary),
             ),
           ),
         ],
@@ -277,7 +286,9 @@ class _FilterSheetState extends State<_FilterSheet> {
   }
 
   Future<void> _pickDate({required bool isFrom}) async {
-    final initial = DateTime.tryParse(isFrom ? _from ?? _to ?? '' : _to ?? _from ?? '') ?? DateTime.now();
+    final initial =
+        DateTime.tryParse(isFrom ? _from ?? _to ?? '' : _to ?? _from ?? '') ??
+        DateTime.now();
     final picked = await showDatePicker(
       context: context,
       initialDate: initial,
@@ -298,11 +309,11 @@ class _FilterSheetState extends State<_FilterSheet> {
   }
 
   TransactionFilter _build() => TransactionFilter(
-        search: _search?.trim().isEmpty ?? true ? null : _search!.trim(),
-        from: _from,
-        to: _to,
-        itemId: _itemId,
-      );
+    search: _search?.trim().isEmpty ?? true ? null : _search!.trim(),
+    from: _from,
+    to: _to,
+    itemId: _itemId,
+  );
 
   @override
   Widget build(BuildContext context) {
@@ -313,9 +324,9 @@ class _FilterSheetState extends State<_FilterSheet> {
       padding: EdgeInsets.only(bottom: bottom),
       child: Container(
         padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
-        decoration: const BoxDecoration(
-          color: AppTheme.surface,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surface,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
         ),
         child: SingleChildScrollView(
           child: Column(
@@ -324,13 +335,15 @@ class _FilterSheetState extends State<_FilterSheet> {
               Row(
                 children: [
                   Expanded(
-                    child: Text('Filter Transaksi',
-                        style: Theme.of(context).textTheme.titleMedium),
+                    child: Text(
+                      'Filter Transaksi',
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
                   ),
                   IconButton(
                     tooltip: 'Tutup',
                     onPressed: () => Navigator.of(context).pop(),
-                    icon: const Icon(Icons.close),
+                    icon: const Icon(PhosphorIcons.x),
                   ),
                 ],
               ),
@@ -341,7 +354,7 @@ class _FilterSheetState extends State<_FilterSheet> {
                 onChanged: (v) => setState(() => _search = v),
                 decoration: const InputDecoration(
                   hintText: 'Kata kunci (nomor, nama barang, petugas...)',
-                  prefixIcon: Icon(Icons.search),
+                  prefixIcon: Icon(PhosphorIcons.magnifyingGlass),
                 ),
               ),
               const SizedBox(height: 16),
@@ -350,7 +363,9 @@ class _FilterSheetState extends State<_FilterSheet> {
                   Expanded(
                     child: _DateField(
                       label: 'Dari',
-                      value: _from != null ? format.format(DateTime.parse(_from!)) : null,
+                      value: _from != null
+                          ? format.format(DateTime.parse(_from!))
+                          : null,
                       onTap: () => _pickDate(isFrom: true),
                     ),
                   ),
@@ -358,7 +373,9 @@ class _FilterSheetState extends State<_FilterSheet> {
                   Expanded(
                     child: _DateField(
                       label: 'Sampai',
-                      value: _to != null ? format.format(DateTime.parse(_to!)) : null,
+                      value: _to != null
+                          ? format.format(DateTime.parse(_to!))
+                          : null,
                       onTap: () => _pickDate(isFrom: false),
                     ),
                   ),
@@ -376,12 +393,18 @@ class _FilterSheetState extends State<_FilterSheet> {
                 searchText: (i) => '${i.code} — ${i.name}',
                 itemBuilder: (i) => ListTile(
                   contentPadding: EdgeInsets.zero,
-                  title: Text(i.name, style: Theme.of(context).textTheme.titleSmall),
-                  subtitle: Text(i.code, style: Theme.of(context).textTheme.bodySmall),
+                  title: Text(
+                    i.name,
+                    style: Theme.of(context).textTheme.titleSmall,
+                  ),
+                  subtitle: Text(
+                    i.code,
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
                 ),
               ),
               const SizedBox(height: 24),
-              ElevatedButton(
+              FilledButton(
                 onPressed: () => Navigator.of(context).pop(_build()),
                 child: const Text('Terapkan Filter'),
               ),
@@ -412,7 +435,11 @@ class _FilterSheetState extends State<_FilterSheet> {
 }
 
 class _DateField extends StatelessWidget {
-  const _DateField({required this.label, required this.value, required this.onTap});
+  const _DateField({
+    required this.label,
+    required this.value,
+    required this.onTap,
+  });
 
   final String label;
   final String? value;
@@ -426,14 +453,16 @@ class _DateField extends StatelessWidget {
       child: InputDecorator(
         decoration: InputDecoration(
           labelText: label,
-          suffixIcon: const Icon(Icons.calendar_today_outlined, size: 18),
+          suffixIcon: const Icon(PhosphorIcons.calendarBlank, size: 18),
         ),
         child: Text(
           value ?? 'Semua',
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
           style: TextStyle(
-            color: value != null ? AppTheme.textPrimary : AppTheme.textSecondary,
+            color: value != null
+                ? Theme.of(context).colorScheme.onSurface
+                : Theme.of(context).colorScheme.onSurfaceVariant,
             fontWeight: value != null ? FontWeight.w600 : FontWeight.normal,
           ),
         ),

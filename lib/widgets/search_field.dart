@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 
 /// Kolom pencarian konsisten untuk daftar referensi (kategori, ruangan).
 class SearchField extends StatefulWidget {
@@ -30,11 +31,11 @@ class _SearchFieldState extends State<SearchField> {
       decoration: InputDecoration(
         hintText: widget.hint,
         isDense: true,
-        prefixIcon: const Icon(Icons.search, size: 20),
+        prefixIcon: const Icon(PhosphorIcons.magnifyingGlass, size: 20),
         suffixIcon: widget.controller.text.isNotEmpty
             ? IconButton(
                 tooltip: 'Hapus',
-                icon: const Icon(Icons.close, size: 18),
+                icon: const Icon(PhosphorIcons.x, size: 18),
                 onPressed: () {
                   widget.controller.clear();
                   setState(() {});
