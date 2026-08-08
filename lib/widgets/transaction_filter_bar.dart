@@ -75,7 +75,9 @@ class _TransactionFilterBarState extends State<TransactionFilterBar> {
     final text = value.trim();
     _pendingSearch = text;
     widget.onChanged(
-      widget.filter.copyWith(search: text.isEmpty ? null : text),
+      text.isEmpty
+          ? widget.filter.copyWith(clearSearch: true)
+          : widget.filter.copyWith(search: text),
     );
   }
 
@@ -109,8 +111,9 @@ class _TransactionFilterBarState extends State<TransactionFilterBar> {
       chips.add(
         _FilterChip(
           label: '$from – $to',
-          onDelete: () =>
-              widget.onChanged(filter.copyWith(from: null, to: null)),
+          onDelete: () => widget.onChanged(
+            filter.copyWith(clearFrom: true, clearTo: true),
+          ),
         ),
       );
     }
@@ -118,7 +121,8 @@ class _TransactionFilterBarState extends State<TransactionFilterBar> {
       chips.add(
         _FilterChip(
           label: selectedItem.name,
-          onDelete: () => widget.onChanged(filter.copyWith(itemId: null)),
+          onDelete: () =>
+              widget.onChanged(filter.copyWith(clearItemId: true)),
         ),
       );
     }

@@ -175,6 +175,12 @@ class AppTheme {
         filled: true,
         fillColor: filledBg,
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        // Label/placeholder selalu muted (abu) di semua state — normal, focus,
+        // maupun error. Hanya border & pesan error yang berubah merah.
+        labelStyle: textTheme.bodyMedium?.copyWith(color: textSecondary),
+        floatingLabelStyle: textTheme.bodyMedium?.copyWith(
+          color: textSecondary,
+        ),
         hintStyle: textTheme.bodyMedium?.copyWith(color: textSecondary),
         prefixIconColor: textSecondary,
         suffixIconColor: textSecondary,

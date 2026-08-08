@@ -17,12 +17,16 @@ class TransactionFilter {
     String? from,
     String? to,
     int? itemId,
+    bool clearSearch = false,
+    bool clearFrom = false,
+    bool clearTo = false,
+    bool clearItemId = false,
   }) {
     return TransactionFilter(
-      search: search ?? this.search,
-      from: from ?? this.from,
-      to: to ?? this.to,
-      itemId: itemId ?? this.itemId,
+      search: clearSearch ? null : (search ?? this.search),
+      from: clearFrom ? null : (from ?? this.from),
+      to: clearTo ? null : (to ?? this.to),
+      itemId: clearItemId ? null : (itemId ?? this.itemId),
     );
   }
 
